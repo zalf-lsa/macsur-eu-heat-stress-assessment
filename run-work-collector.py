@@ -82,7 +82,7 @@ def oidToString(oid, includeTimeAgg):
 
 	return oss
 
-def writeOutputHeaderRows(outputIds, csvSep, includeHeaderRow, includeUnitsRow, includeTimeAgg):
+def writeOutputHeaderRows(outputIds, includeHeaderRow, includeUnitsRow, includeTimeAgg):
 	row1 = []
 	row2 = []
 	row3 = []
@@ -116,14 +116,16 @@ def writeOutputHeaderRows(outputIds, csvSep, includeHeaderRow, includeUnitsRow, 
 	out = []
 	if includeHeaderRow:
 		out.append(row1)
+	if includeUnitsRow:
 		out.append(row4)
+	if includeTimeAgg:
 		out.append(row3)
 		out.append(row2)
 	
 	return out
 
 
-def writeOutput(outputIds, values, csvSep):
+def writeOutput(outputIds, values):
 	out = []
 	if len(values) > 0:
 		for k in range(0, len(values[0])):
@@ -170,8 +172,8 @@ def collector():
 			
 			outputIds = parseOutputIds(["Date", "Crop", "Stage", "Yield", "SumYield", "Tmin", "Tavg", "Tmax", "Wind", "Globrad", "Relhumid", "Sunhours"])
 			
-			hout = writeOutputHeaderRows(outputIds, ",", True, True, True)
-			rout = writeOutput(outputIds, d, ",")
+			hout = writeOutputHeaderRows(outputIds, True, True, True)
+			rout = writeOutput(outputIds, d)
 			
 			with open("out.csv", 'wb') as f:
 				writer = csv.writer(f)

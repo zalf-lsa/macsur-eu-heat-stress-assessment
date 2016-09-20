@@ -35,17 +35,22 @@ def main():
 	#sim["climate.csv"] = "35_120_v1.csv"
 	sim["climate.csv"] = "C:/Users/berg.ZALF-AD/MONICA/Examples/Hohenfinow2/climate.csv"
 
-	wwPheno = {}
-	with open("WW_pheno.csv") as f:
-		reader = csv.reader(f)
-		reader.next()
-		for row in reader:
-			wwPheno[(int(row[0]), int(row[1]))] = {
-				  "sowing-doy": int(row[6]) 
-				, "flowering-doy": int(row[7]) 
-				, "harvest-doy": int(row[8])
-				}
+	def readPheno(pathToFile):
+		with open(pathToFile) as f:
+			p = {}
+			reader = csv.reader(f)
+			reader.next()
+			for row in reader:
+				p[(int(row[0]), int(row[1]))] = {
+					"sowing-doy": int(row[6]) 
+					, "flowering-doy": int(row[7]) 
+					, "harvest-doy": int(row[8])
+					}
+			return p
 
+	wwPheno = readPheno("WW_pheno.csv")
+	smPheno = readPheno("Maize_pheno.csv")
+	
 	soil = {}
 	with open("JRC_soil_macsur.csv") as f:
 		reader = csv.reader(f)
@@ -68,17 +73,21 @@ def main():
 	row = 48
 	col = 42
 	s = soil[(row, col)]
-	p = wwPheno[(row, col)]
+	#p, cropType = (wwPheno[(row, col)], "WW")
+	p, cropType = (smPheno[(row, col)], "SM")
 	
 	startDate = date(1980, 1, 1)# + timedelta(days = p["sowing-doy"])
 	sim["start-date"] = startDate.isoformat()
 	sim["end-date"] = date(2010, 12, 31).isoformat()
 	sim["debug?"] = True
 
+	isWintercrop = p["sowing-doy"] > p["harvest-doy"]
 	seedingDate = date(1980, 1, 1) + timedelta(days = p["sowing-doy"])
 	crop["cropRotation"][0]["worksteps"][0]["date"] = seedingDate.strftime("0000-%m-%d")
-	harvestDate = date(1980, 1, 1) + timedelta(days = p["harvest-doy"])
-	crop["cropRotation"][0]["worksteps"][1]["date"] = harvestDate.strftime("0000-%m-%d")
+	crop["cropRotation"][0]["worksteps"][0]["crop"][2] = cropType
+	harvestDate = date(1980 + (1 if isWintercrop else 0), 1, 1) + timedelta(days = p["harvest-doy"])
+	crop["cropRotation"][0]["worksteps"][1]["date"] = harvestDate.strftime("000" + ("1" if isWintercrop else "0") + "-%m-%d")
+	crop["cropRotation"][0]["worksteps"][1]["crop"][2] = cropType
 
 	site["Latitude"] = s["latitude"]
 	pwp = s["pwp"]
