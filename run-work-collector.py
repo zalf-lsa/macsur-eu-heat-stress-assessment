@@ -11,7 +11,7 @@ import types
 import json
 import csv
 import sys
-sys.path.append("C:/Users/berg.ZALF-AD/GitHub/monica/project-files/Win32/Release")
+sys.path.append("C:/Users/stella/Documents/GitHub/monica/project-files/Win32/Release")
 import monica_python
 
 OP_AVG = 0
@@ -156,6 +156,9 @@ def parseOutputIds(oids):
 
 
 def collector():
+	with open("sim.json") as f:
+		sim = json.load(f)
+
 	context = zmq.Context()
 	socket = context.socket(zmq.PULL)
 	socket.bind("tcp://*:7777")
@@ -170,7 +173,7 @@ def collector():
 			print "received work results"
 			d = result["daily"]
 			
-			outputIds = parseOutputIds(["Date", "Crop", "Stage", "Yield", "SumYield", "Tmin", "Tavg", "Tmax", "Wind", "Globrad", "Relhumid", "Sunhours"])
+			outputIds = parseOutputIds(sim["output"]["daily"])
 			
 			hout = writeOutputHeaderRows(outputIds, True, True, True)
 			rout = writeOutput(outputIds, d)

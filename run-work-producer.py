@@ -11,7 +11,7 @@ from StringIO import StringIO
 from datetime import date, datetime, timedelta
 #import types
 import sys
-sys.path.append("C:/Users/berg.ZALF-AD/GitHub/monica/project-files/Win32/Release")	 # path to monica_python.pyd or monica_python.so
+sys.path.append("C:/Users/stella/Documents/GitHub/monica/project-files/Win32/Release")	 # path to monica_python.pyd or monica_python.so
 #sys.path.append('C:/Users/berg.ZALF-AD/GitHub/util/soil')
 #from soil_conversion import *
 #import monica_python
@@ -31,9 +31,9 @@ def main():
 	with open("crop.json") as f:
 		crop = json.load(f)
 
-	sim["include-file-base-path"] = "C:/Users/berg.ZALF-AD/MONICA"
+	sim["include-file-base-path"] = "C:/Users/stella/MONICA"
 	#sim["climate.csv"] = "35_120_v1.csv"
-	sim["climate.csv"] = "C:/Users/berg.ZALF-AD/MONICA/Examples/Hohenfinow2/climate.csv"
+	#sim["climate.csv"] = "C:/Users/stella/MONICA/Examples/Hohenfinow2/climate.csv"
 
 	def readPheno(pathToFile):
 		with open(pathToFile) as f:
@@ -159,6 +159,10 @@ def main():
 		, "climate": climateCSVString
 		})
 	#print env
+
+	for i in range(0, 2 + 1):
+		env["cropRotation"][0]["worksteps"][0]["crop"]["cropParams"]["cultivar"]["OrganIdsForPrimaryYield"][i]["yieldPercentage"] = 1
+		env["cropRotation"][0]["worksteps"][1]["crop"]["cropParams"]["cultivar"]["OrganIdsForPrimaryYield"][i]["yieldPercentage"] = 1
 
 	producer(env)
 
