@@ -11,7 +11,7 @@ from StringIO import StringIO
 from datetime import date, datetime, timedelta
 #import types
 import sys
-sys.path.append("C:/Users/stella/Documents/GitHub/monica/project-files/Win32/Release")	 # path to monica_python.pyd or monica_python.so
+sys.path.append("C:/Users/berg.ZALF-AD/GitHub/monica/project-files/Win32/Release")	 # path to monica_python.pyd or monica_python.so
 #sys.path.append('C:/Users/berg.ZALF-AD/GitHub/util/soil')
 #from soil_conversion import *
 #import monica_python
@@ -31,7 +31,7 @@ def main():
 	with open("crop.json") as f:
 		crop = json.load(f)
 
-	sim["include-file-base-path"] = "C:/Users/stella/MONICA"
+	sim["include-file-base-path"] = "C:/Users/berg.ZALF-AD/MONICA"
 	#sim["climate.csv"] = "35_120_v1.csv"
 	#sim["climate.csv"] = "C:/Users/stella/MONICA/Examples/Hohenfinow2/climate.csv"
 
@@ -69,54 +69,55 @@ def main():
 				, "bd-topsoil": float(row[13])
 				, "bd-subsoil": float(row[14])
 				}
-
-	row = 48
-	col = 42
-	s = soil[(row, col)]
-	#p, cropType = (wwPheno[(row, col)], "WW")
-	p, cropType = (smPheno[(row, col)], "SM")
 	
-	startDate = date(1980, 1, 1)# + timedelta(days = p["sowing-doy"])
-	sim["start-date"] = startDate.isoformat()
-	sim["end-date"] = date(2010, 12, 31).isoformat()
-	sim["debug?"] = True
+	
+	def updateRowCol(row, col):
+		s = soil[(row, col)]
+		#p, cropType = (wwPheno[(row, col)], "WW")
+		p, cropType = (smPheno[(row, col)], "SM")
+		
+		startDate = date(1980, 1, 1)# + timedelta(days = p["sowing-doy"])
+		sim["start-date"] = startDate.isoformat()
+		sim["end-date"] = date(2010, 12, 31).isoformat()
+		sim["debug?"] = True
 
-	isWintercrop = p["sowing-doy"] > p["harvest-doy"]
-	seedingDate = date(1980, 1, 1) + timedelta(days = p["sowing-doy"])
-	crop["cropRotation"][0]["worksteps"][0]["date"] = seedingDate.strftime("0000-%m-%d")
-	crop["cropRotation"][0]["worksteps"][0]["crop"][2] = cropType
-	harvestDate = date(1980 + (1 if isWintercrop else 0), 1, 1) + timedelta(days = p["harvest-doy"])
-	crop["cropRotation"][0]["worksteps"][1]["date"] = harvestDate.strftime("000" + ("1" if isWintercrop else "0") + "-%m-%d")
-	crop["cropRotation"][0]["worksteps"][1]["crop"][2] = cropType
+		isWintercrop = p["sowing-doy"] > p["harvest-doy"]
+		seedingDate = date(1980, 1, 1) + timedelta(days = p["sowing-doy"])
+		crop["cropRotation"][0]["worksteps"][0]["date"] = seedingDate.strftime("0000-%m-%d")
+		crop["cropRotation"][0]["worksteps"][0]["crop"][2] = cropType
+		harvestDate = date(1980 + (1 if isWintercrop else 0), 1, 1) + timedelta(days = p["harvest-doy"])
+		crop["cropRotation"][0]["worksteps"][1]["date"] = harvestDate.strftime("000" + ("1" if isWintercrop else "0") + "-%m-%d")
+		crop["cropRotation"][0]["worksteps"][1]["crop"][2] = cropType
 
-	site["Latitude"] = s["latitude"]
-	pwp = s["pwp"]
-	fc = s["fc"]
-	smPercentFC = (((s["sw-init"] - pwp) / 0.7) + pwp) / fc * 100.0
-	top = { 
-		  "Thickness": [0.3, "m"]
-		, "SoilOrganicCarbon": [s["oc-topsoil"], "%"]
-		, "SoilBulkDensity": [s["bd-topsoil"] * 1000, "kg m-3"]
-		, "FieldCapacity": [fc, "m3 m-3"]
-		, "PermanentWiltingPoint": [pwp, "m3 m-3"]
-		, "PoreVolume": [s["sat"], "m3 m-3"]
-		, "SoilMoisturePercentFC": [smPercentFC, "% [0-100]"]
-		, "Lambda": 0.5
-		}
-	sub = {
-		  "Thickness": [1.7, "m"] 
-		, "SoilOrganicCarbon": [s["oc-subsoil"], "%"]
-		, "SoilBulkDensity": [s["bd-subsoil"] * 1000, "kg m-3"]
-		, "FieldCapacity": [fc, "m3 m-3"]
-		, "PermanentWiltingPoint": [pwp, "m3 m-3"]
-		, "PoreVolume": [s["sat"], "m3 m-3"]
-		, "SoilMoisturePercentFC": [smPercentFC, "% [0-100]"]
-		, "Lambda": 0.5
-		} 
+		site["Latitude"] = s["latitude"]
+		pwp = s["pwp"]
+		fc = s["fc"]
+		smPercentFC = (((s["sw-init"] - pwp) / 0.7) + pwp) / fc * 100.0
+		top = { 
+			"Thickness": [0.3, "m"]
+			, "SoilOrganicCarbon": [s["oc-topsoil"], "%"]
+			, "SoilBulkDensity": [s["bd-topsoil"] * 1000, "kg m-3"]
+			, "FieldCapacity": [fc, "m3 m-3"]
+			, "PermanentWiltingPoint": [pwp, "m3 m-3"]
+			, "PoreVolume": [s["sat"], "m3 m-3"]
+			, "SoilMoisturePercentFC": [smPercentFC, "% [0-100]"]
+			, "Lambda": 0.5
+			}
+		sub = {
+			"Thickness": [1.7, "m"] 
+			, "SoilOrganicCarbon": [s["oc-subsoil"], "%"]
+			, "SoilBulkDensity": [s["bd-subsoil"] * 1000, "kg m-3"]
+			, "FieldCapacity": [fc, "m3 m-3"]
+			, "PermanentWiltingPoint": [pwp, "m3 m-3"]
+			, "PoreVolume": [s["sat"], "m3 m-3"]
+			, "SoilMoisturePercentFC": [smPercentFC, "% [0-100]"]
+			, "Lambda": 0.5
+			} 
 
-	site["SiteParameters"]["SoilProfileParameters"] = [top, sub] 
-	#print site["SiteParameters"]["SoilProfileParameters"]
+		site["SiteParameters"]["SoilProfileParameters"] = [top, sub] 
+		#print site["SiteParameters"]["SoilProfileParameters"]
 
+	
 	period = "0"
 	gcm_rcp = "0_0" #"GFDL-CM3_45"
 	
@@ -152,19 +153,29 @@ def main():
 					climateCSVString += csv2string(line) + "\n" #str(line)[1:-1] + "\n"
 			lastInSection = currentlyInSection
 
-	env = createEnvJsonFromJsonConfig({
-		  "crop": crop
-		, "site": site
-		, "sim": sim
-		, "climate": climateCSVString
-		})
-	#print env
+	i = 0
+	for row, col in wwPheno.iterkeys():
+		updateRowCol(row, col)
 
-	for i in range(0, 2 + 1):
-		env["cropRotation"][0]["worksteps"][0]["crop"]["cropParams"]["cultivar"]["OrganIdsForPrimaryYield"][i]["yieldPercentage"] = 1
-		env["cropRotation"][0]["worksteps"][1]["crop"]["cropParams"]["cultivar"]["OrganIdsForPrimaryYield"][i]["yieldPercentage"] = 1
+		env = createEnvJsonFromJsonConfig({
+			  "crop": crop
+			, "site": site
+			, "sim": sim
+			, "climate": climateCSVString
+			})
+		#print env
 
-	producer(env)
+		#for i in range(0, 2 + 1):
+		#	env["cropRotation"][0]["worksteps"][0]["crop"]["cropParams"]["cultivar"]["OrganIdsForPrimaryYield"][i]["yieldPercentage"] = 1
+		#	env["cropRotation"][0]["worksteps"][1]["crop"]["cropParams"]["cultivar"]["OrganIdsForPrimaryYield"][i]["yieldPercentage"] = 1
+
+		producer(env)
+		print "send message ", i
+
+		if i > 20:
+			break
+
+		i = i + 1
 
 
 def producer(env):
@@ -182,6 +193,7 @@ def producer(env):
 
 	#for i in range(1):
 	socket.send_json(env)
+	
 
 	# Start your result manager and workers before you start your producers
 	

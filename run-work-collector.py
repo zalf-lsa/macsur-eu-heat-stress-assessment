@@ -11,7 +11,7 @@ import types
 import json
 import csv
 import sys
-sys.path.append("C:/Users/stella/Documents/GitHub/monica/project-files/Win32/Release")
+sys.path.append("C:/Users/berg.ZALF-AD/GitHub/monica/project-files/Win32/Release")
 import monica_python
 
 OP_AVG = 0
@@ -159,6 +159,8 @@ def collector():
 	with open("sim.json") as f:
 		sim = json.load(f)
 
+	i = 0
+
 	context = zmq.Context()
 	socket = context.socket(zmq.PULL)
 	socket.bind("tcp://*:7777")
@@ -174,16 +176,18 @@ def collector():
 			d = result["daily"]
 			
 			outputIds = parseOutputIds(sim["output"]["daily"])
-			
+						
 			hout = writeOutputHeaderRows(outputIds, True, True, True)
 			rout = writeOutput(outputIds, d)
 			
-			with open("out.csv", 'wb') as f:
+			with open("out-" + str(i) + ".csv", 'wb') as f:
 				writer = csv.writer(f)
 				for row in hout:
 					writer.writerow(row)
 				for row in rout:
 					writer.writerow(row)
+
+			i = i + 1
 
 			#c = result["crop"]
 			#print c

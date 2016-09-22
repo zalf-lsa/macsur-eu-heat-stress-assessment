@@ -14,7 +14,7 @@ print "sys.version: ", sys.version
 def main():
 	context = zmq.Context()
 	socket = context.socket(zmq.PULL)
-	socket.bind("tcp://10.10.26.34:6666")
+	socket.connect("tcp://10.10.26.34:6667")
 
 	#consumerSocket = context.socket(zmq.PUSH)
 	#consumerSocket.connect("tcp://localhost:7777");
@@ -29,6 +29,7 @@ def main():
 	while True:
 		j = socket.recv_json()
 		print "received job ", i 
+		i = i + 1
 
 	# Start your result manager and workers before you start your producers
 	
