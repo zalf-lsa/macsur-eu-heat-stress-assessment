@@ -79,7 +79,7 @@ def main():
 		startDate = date(1980, 1, 1)# + timedelta(days = p["sowing-doy"])
 		sim["start-date"] = startDate.isoformat()
 		sim["end-date"] = date(2010, 12, 31).isoformat()
-		sim["debug?"] = True
+		#sim["debug?"] = True
 
 		isWintercrop = p["sowing-doy"] > p["harvest-doy"]
 		seedingDate = date(1980, 1, 1) + timedelta(days = p["sowing-doy"])

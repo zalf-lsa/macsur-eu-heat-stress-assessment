@@ -172,7 +172,7 @@ def collector():
 			print "received finish message"
 			leave = True
 		else:
-			print "received work results"
+			print "received work result ", i
 			d = result["daily"]
 			
 			outputIds = parseOutputIds(sim["output"]["daily"])
