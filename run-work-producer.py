@@ -1,12 +1,15 @@
 #!/usr/bin/python
-# -*- coding: ISO-8859-15-*-
+# -*- coding: UTF-8
 
 # pragma pylint: disable=mixed-indentation
 
 import time
+import os
 import zmq
 import json
 import csv
+import copy
+import sys
 from StringIO import StringIO
 from datetime import date, datetime, timedelta
 #import types
@@ -15,13 +18,18 @@ sys.path.append("C:/Users/berg.ZALF-AD/GitHub/monica/project-files/Win32/Release
 #sys.path.append('C:/Users/berg.ZALF-AD/GitHub/util/soil')
 #from soil_conversion import *
 #import monica_python
-from env_json_from_json_config import createEnvJsonFromJsonConfig
+import monica_io
 
 #print "pyzmq version: ", zmq.pyzmq_version()
 #print "sys.path: ", sys.path
 #print "sys.version: ", sys.version
 
 def main():
+	context = zmq.Context()
+	socket = context.socket(zmq.PUSH)
+	port = 6666 if len(sys.argv) == 1 else sys.argv[1]
+	socket.bind("tcp://*:" + str(port))
+
 	with open("sim.json") as f:
 		sim = json.load(f)
 
@@ -71,7 +79,7 @@ def main():
 				}
 	
 	
-	def updateRowCol(row, col):
+	def updateSoilCropDates(row, col):
 		s = soil[(row, col)]
 		#p, cropType = (wwPheno[(row, col)], "WW")
 		p, cropType = (smPheno[(row, col)], "SM")
@@ -117,72 +125,121 @@ def main():
 		site["SiteParameters"]["SoilProfileParameters"] = [top, sub] 
 		#print site["SiteParameters"]["SoilProfileParameters"]
 
+	def readClimate(pathToFile):
+
+		def csv2string(data):
+			si = StringIO()
+			cw = csv.writer(si)
+			cw.writerow(data)
+			return si.getvalue().strip('\r\n')
+
+		climateCSVString = ""
+		lastInSection = False
+		with open(pathToFile) as f:
+			c = {}
+			reader = csv.reader(f)
+			reader.next()
+
+			csvHeader = csv2string(["iso-date", "tmin", "tavg", "tmax", "precip", "globrad", "wind", "relhumid"]) + "\n"
+			prev = ("","")
+			for row in reader:
+				period_gcmRcp = (row[0], row[1])
+				
+				line = [
+					datetime.strptime(row[2], "%Y%m%d").date().isoformat()
+					, float(row[4])
+					, (float(row[3]) + float(row[4])) / 2
+					, float(row[3])
+					, float(row[7])
+					, float(row[8])
+					, float(row[6]) / 24 / 3.6
+					, (float(row[9]) + float(row[10])) / 2
+					]
+				if prev != period_gcmRcp:
+					print period_gcmRcp
+					prev = period_gcmRcp
+
+				c[period_gcmRcp] = c.get(period_gcmRcp, csvHeader) + csv2string(line) + "\n"
+			
+			return c
+
 	
-	period = "0"
-	gcm_rcp = "0_0" #"GFDL-CM3_45"
-	
-	def csv2string(data):
-		si = StringIO()
-		cw = csv.writer(si)
-		cw.writerow(data)
-		return si.getvalue().strip('\r\n')
+	pathToClimateData = "A:/macsur-eu-heat-stress-transformed/"
 
-	climateCSVString = ""
-	lastInSection = False
-	with open("35_120_v1.csv") as f:
-		reader = csv.reader(f)
-		reader.next()
-		climateCSVString += csv2string(["iso-date", "tmin", "tavg", "tmax", "precip", "globrad", "wind", "relhumid"]) + "\n"
-		for row in reader:
-			line = [
-				  datetime.strptime(row[2], "%Y%m%d").date().isoformat()
-				, float(row[4])
-				, (float(row[3]) + float(row[4])) / 2
-				, float(row[3])
-				, float(row[7])
-				, float(row[8])
-				, float(row[6]) / 24 / 3.6
-				, (float(row[9]) + float(row[10])) / 2
-				]
+	allRowsCols = set(soil.iterkeys())
+	allRowsCols.intersection_update(wwPheno, smPheno)
+	print "# of rowsCols = ", len(allRowsCols)
 
-			currentlyInSection = row[0] == period and row[1] == gcm_rcp
-			if lastInSection and not currentlyInSection:
-				break
-			else: 
-				if currentlyInSection:
-					climateCSVString += csv2string(line) + "\n" #str(line)[1:-1] + "\n"
-			lastInSection = currentlyInSection
+	#sim["climate.csv-options"]["start-date"] = sim["start-date"]
+	#sim["climate.csv-options"]["end-date"] = sim["end-date"]
+	sim["climate.csv-options"]["use-leap-years"] = sim["use-leap-years"]
 
+	readClimateDataLocally = True
 	i = 0
-	for row, col in wwPheno.iterkeys():
-		updateRowCol(row, col)
-
-		env = createEnvJsonFromJsonConfig({
+	envs = []
+	startStore = time.clock()
+	for row, col in allRowsCols:
+		updateSoilCropDates(row, col)
+		env = monica_io.createEnvJsonFromJsonConfig({
 			  "crop": crop
 			, "site": site
 			, "sim": sim
-			, "climate": climateCSVString
+			, "climate": ""
 			})
-		#print env
+		if not readClimateDataLocally:
+			env["csvViaHeaderOptions"] = sim["climate.csv-options"]	
 
-		#for i in range(0, 2 + 1):
-		#	env["cropRotation"][0]["worksteps"][0]["crop"]["cropParams"]["cultivar"]["OrganIdsForPrimaryYield"][i]["yieldPercentage"] = 1
-		#	env["cropRotation"][0]["worksteps"][1]["crop"]["cropParams"]["cultivar"]["OrganIdsForPrimaryYield"][i]["yieldPercentage"] = 1
-
-		producer(env)
-		print "send message ", i
-
-		if i > 20:
+		if i > 500:
 			break
 
-		i = i + 1
+		for period in os.listdir(pathToClimateData):
+			for gcm in os.listdir(os.path.join(pathToClimateData, period)):
 
+				climateFileName = "{}_{:03d}_v1.csv".format(row, col)
+				pathToClimateFile = os.path.join(pathToClimateData, period, gcm, climateFileName)
+				#climate = readClimate("{}{}_{:03d}_v1.csv".format(pathToClimateData, row, col))
+
+				if not os.path.exists(pathToClimateFile):
+					continue
+				
+				#read climate data on client and send them with the env
+				if readClimateDataLocally:
+					with open(pathToClimateFile) as cf:
+						climateData = cf.read()
+					monica_io.addClimateDataToEnv(env, sim, climateData)
+
+				#read climate data on the server and send just the path to the climate data csv file
+				if not readClimateDataLocally:				
+					env["pathToClimateCSV"] = pathToClimateFile
+
+				#for i in range(0, 2 + 1):
+				#	env["cropRotation"][0]["worksteps"][0]["crop"]["cropParams"]["cultivar"]["OrganIdsForPrimaryYield"][i]["yieldPercentage"] = 1
+				#	env["cropRotation"][0]["worksteps"][1]["crop"]["cropParams"]["cultivar"]["OrganIdsForPrimaryYield"][i]["yieldPercentage"] = 1
+
+				#socket.send_json(env)
+				envs.append(copy.deepcopy(env))
+				print "stored env ", i
+
+				i += 1
+
+	stopStore = time.clock()
+	
+	#print "storing ", i, " envs took ", (stopStore - startStore), " seconds"
+	#return
+
+	k = 0
+	startSend = time.clock()
+	for env in envs:
+		socket.send_json(env)
+		print "send message ", k
+		k += 1			
+	stopSend = time.clock()
+
+	print "storing ", i, " envs took ", (stopStore - startStore), " seconds"
+	print "sending ", k, " envs took ", (stopSend - startSend), " seconds"
 
 def producer(env):
-	context = zmq.Context()
-	socket = context.socket(zmq.PUSH)
-	socket.bind("tcp://*:6666")
-
+	
 	#consumerSocket = context.socket(zmq.PUSH)
 	#consumerSocket.connect("tcp://localhost:7777");
 	
