@@ -191,7 +191,9 @@ def collector():
             row, col = (int(row_), int(col_))
             period = ci_parts[2]
             gcm = ci_parts[3]
-            sim_id = ci_parts[4]
+            co2_id, co2_value_ = ci_parts[4][1:-1].split("/")
+            co2_value = int(co2_value_)
+            sim_id = ci_parts[5]
 
             for data in result.get("data", []):
                 results = data.get("results", [])
