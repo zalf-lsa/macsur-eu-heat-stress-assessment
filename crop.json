@@ -1,11 +1,4 @@
   {
-	"__UNDERSCORES IN FRONT MEANS IGNORE THE KEY, this is just to keep a valid JSON file": "",
-	"__!!! check and beautify JSON files with http://codebeautify.org/jsonviewer !!!": "",
-	
-	"__this is the path which is prepended to 'include-from-file' paths, if they are relative paths": "",
-	"_include-file-base-path": "../",
-	
-	"__user defined crops section to be used via references": "",
 	"crops": {
 		"SM": {
 			"cropParams": {
@@ -23,23 +16,20 @@
 		}
 	},
 	
-	"__user defined fertilizer parameteres section to be used via references": "",
 	"fert-params": {
 		"AN": ["include-from-file", "monica-parameters/mineral-fertilisers/AN.json"],
 		"CADLM": ["include-from-file", "monica-parameters/organic-fertilisers/CADLM.json"]
 	}, 
 
-	"__relative date crop rotation example": "",
 	"cropRotation": [
 		{
 			"worksteps": [
 				{ "date": "0000-09-23", "type": "Seed", "crop": ["ref", "crops", "WW"] },
-				{ "date": "0001-07-27", "type": "Harvest", "crop": ["ref", "crops", "WW"] }
+				{ "date": "0001-07-27", "type": "Harvest"}
 			]
 		}
 	],
 
-	"__general crop parameters for the monica model": "",
 	"CropParameters": {
 		"DEFAULT": ["include-from-file", "monica-parameters/user-parameters/hermes-crop.json"]
 	}

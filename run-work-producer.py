@@ -24,19 +24,23 @@ from StringIO import StringIO
 from datetime import date, datetime, timedelta
 #import types
 import sys
-sys.path.append("C:/Users/berg.ZALF-AD/GitHub/monica/project-files/Win32/Release")	 # path to monica_python.pyd or monica_python.so
+sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
+#sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Debug")
+sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
+print sys.path
 #sys.path.append('C:/Users/berg.ZALF-AD/GitHub/util/soil')
 #from soil_conversion import *
 #import monica_python
 import zmq
 import monica_io
+#print "path to monica_io: ", monica_io.__file__
 
 #print "pyzmq version: ", zmq.pyzmq_version()
 #print "sys.path: ", sys.path
 #print "sys.version: ", sys.version
 
 #PATH_TO_CLIMATE_DATA = "A:/macsur-eu-heat-stress-transformed/"
-PATH_TO_CLIMATE_DATA_SERVER = "../../macsur-heat-stress-transformed/"
+PATH_TO_CLIMATE_DATA_SERVER = "/archiv-daten/md/berg/macsur-eu-heat-stress-transformed/"
 PATH_TO_CLIMATE_DATA = "U:/development/macsur-heat-stress-transformed/"
 
 def main():
@@ -56,6 +60,9 @@ def main():
     with open("crop.json") as _:
         crop = json.load(_)
 
+    with open("sims.json") as _:
+        sims = json.load(_)
+
     sim["include-file-base-path"] = "C:/Users/berg.ZALF-AD/MONICA"
     #sim["climate.csv"] = "35_120_v1.csv"
     #sim["climate.csv"] = "C:/Users/stella/MONICA/Examples/Hohenfinow2/climate.csv"
@@ -74,11 +81,13 @@ def main():
                 }
             return ppp
 
-    www_pheno = read_pheno("WW_pheno.csv")
-    sm_pheno = read_pheno("Maize_pheno.csv")
+    pheno = {
+      "SM": read_pheno("Maize_pheno_v3.csv"),
+      "WW": read_pheno("WW_pheno_v3.csv")
+    }
 
     soil = {}
-    with open("JRC_soil_macsur.csv") as _:
+    with open("JRC_soil_macsur_v2.csv") as _:
         reader = csv.reader(_)
         reader.next()
         for row in reader:
@@ -96,12 +105,28 @@ def main():
                 "bd-subsoil": float(row[14])
             }
 
+    def read_calibrated_tsums(path_to_file):
+        "read calibrated tsums into dict"
+        with open(path_to_file) as _:
+            ddd = {}
+            _.next()
+            for line in _:
+                xxs = line.strip().split(",")
+                if len(xxs) > 0:
+                    row_, col_ = xxs[0].split("_")
+                    ddd[(int(row_), int(col_))] = map(int, xxs[1:])
 
-    def update_soil_crop_dates(row, col):
+            return ddd
+
+    tsums = {
+      "SM": read_calibrated_tsums("Calibrated_TSUM_Maize.csv"),
+      "WW": read_calibrated_tsums("Calibrated_TSUM_WW.csv")
+    }
+
+    def update_soil_crop_dates(row, col, crop_id):
         "update function"
         sss = soil[(row, col)]
-        #p, crop_type = (www_pheno[(row, col)], "WW")
-        ppp, crop_type = (sm_pheno[(row, col)], "SM")
+        ppp, crop_type = (pheno[crop_id][(row, col)], crop_id)
 
         start_date = date(1980, 1, 1)# + timedelta(days = p["sowing-doy"])
         sim["start-date"] = start_date.isoformat()
@@ -114,7 +139,6 @@ def main():
         crop["cropRotation"][0]["worksteps"][0]["crop"][2] = crop_type
         harvest_date = date(1980 + (1 if is_wintercrop else 0), 1, 1) + timedelta(days=ppp["harvest-doy"])
         crop["cropRotation"][0]["worksteps"][1]["date"] = harvest_date.strftime("000" + ("1" if is_wintercrop else "0") + "-%m-%d")
-        crop["cropRotation"][0]["worksteps"][1]["crop"][2] = crop_type
 
         site["Latitude"] = sss["latitude"]
         pwp = sss["pwp"]
@@ -156,7 +180,7 @@ def main():
         #climate_csv_string = ""
         #last_in_section = False
         with open(path_to_file) as f:
-            c = {}
+            ccc = {}
             reader = csv.reader(f)
             reader.next()
 
@@ -179,63 +203,78 @@ def main():
                     print period_gcm_rcp
                     prev = period_gcm_rcp
 
-                c[period_gcm_rcp] = c.get(period_gcm_rcp, csv_header) + csv_to_string(line) + "\n"
+                ccc[period_gcm_rcp] = ccc.get(period_gcm_rcp, csv_header) + csv_to_string(line) + "\n"
 
-            return c
+            return ccc
 
 
     all_rows_cols = set(soil.iterkeys())
-    all_rows_cols.intersection_update(www_pheno, sm_pheno)
+    all_rows_cols.intersection_update(pheno["SM"], pheno["WW"])
     print "# of rowsCols = ", len(all_rows_cols)
 
     #sim["climate.csv-options"]["start-date"] = sim["start-date"]
     #sim["climate.csv-options"]["end-date"] = sim["end-date"]
-    sim["climate.csv-options"]["use-leap-years"] = sim["use-leap-years"]
 
-    read_climate_data_locally = False
+    read_climate_data_locally = True
     i = 0
     envs = []
     start_store = time.clock()
-    for row, col in all_rows_cols:
-        update_soil_crop_dates(row, col)
-        env = monica_io.createEnvJsonFromJsonConfig({
-            "crop": crop,
-            "site": site,
-            "sim": sim,
-            "climate": ""
-        })
-        if not read_climate_data_locally:
-            env["csvViaHeaderOptions"] = sim["climate.csv-options"]
+    for crop_id in ["SM", "WW"]:
+        for row, col in all_rows_cols:
+            update_soil_crop_dates(row, col, crop_id)
+            env = monica_io.create_env_json_from_json_config({
+                "crop": crop,
+                "site": site,
+                "sim": sim,
+                "climate": ""
+            })
+            if not read_climate_data_locally:
+                env["csvViaHeaderOptions"] = sim["climate.csv-options"]
 
-        if i > 1500:
-            break
+            env["cropRotation"][0]["worksteps"][0]["crop"]["cropParams"]["cultivar"]["StageTemperatureSum"] = tsums[crop_id][(row, col)]
 
-        for period in os.listdir(PATH_TO_CLIMATE_DATA):
-            for gcm in os.listdir(os.path.join(PATH_TO_CLIMATE_DATA, period)):
+            if i > 1500:
+                break
 
-                climate_filename = "{}_{:03d}_v1.csv".format(row, col)
-                path_to_climate_file = os.path.join(PATH_TO_CLIMATE_DATA, period, gcm, climate_filename)
-                #climate = read_climate("{}{}_{:03d}_v1.csv".format(PATH_TO_CLIMATE_DATA, row, col))
+            for period in os.listdir(PATH_TO_CLIMATE_DATA):
+                for gcm in os.listdir(os.path.join(PATH_TO_CLIMATE_DATA, period)):
 
-                if not os.path.exists(path_to_climate_file):
-                    continue
+                    climate_filename = "{}_{:03d}_v1.csv".format(row, col)
+                    path_to_climate_file = os.path.join(PATH_TO_CLIMATE_DATA, period, gcm, climate_filename)
+                    if not os.path.exists(path_to_climate_file):
+                        continue
 
-                #read climate data on client and send them with the env
-                if read_climate_data_locally:
-                    with open(path_to_climate_file) as cf:
-                        climate_data = cf.read()
-                    monica_io.addClimateDataToEnv(env, sim, climate_data)
+                    #read climate data on client and send them with the env
+                    if read_climate_data_locally:
+                        with open(path_to_climate_file) as cf_:
+                            climate_data = cf_.read()
+                        monica_io.add_climate_data_to_env(env, sim, climate_data)
+                    else:
+                        #read climate data on the server and send just the path to the climate data csv file
+                        env["pathToClimateCSV"] = PATH_TO_CLIMATE_DATA_SERVER + period + "/" + gcm + "/" + climate_filename
 
-                #read climate data on the server and send just the path to the climate data csv file
-                if not read_climate_data_locally:
-                    env["pathToClimateCSV"] = os.path.join(PATH_TO_CLIMATE_DATA_SERVER, period, gcm, climate_filename)
+                    for sim_id, sim_ in sims.iteritems():
+                        #if sim_id != "WL.NL.rain":
+                        #    continue
+                        #sim_id, sim_ = ("potential", sims["potential"])
+                        env["events"] = sim_["output"]
+                        env["params"]["simulationParameters"]["NitrogenResponseOn"] = sim_["NitrogenResponseOn"]
+                        env["params"]["simulationParameters"]["WaterDeficitResponseOn"] = sim_["WaterDeficitResponseOn"]
+                        env["params"]["simulationParameters"]["UseAutomaticIrrigation"] = sim_["UseAutomaticIrrigation"]
+                        env["params"]["simulationParameters"]["UseNMinMineralFertilisingMethod"] = sim_["UseNMinMineralFertilisingMethod"]
 
-                socket.send_json(env)
-                print "sent env ", i
-                #envs.append(copy.deepcopy(env))
-                #print "stored env ", i
+                        env["customId"] = crop_id \
+                                          + "|(" + str(row) + "/" + str(col) + ")" \
+                                          + "|" + period \
+                                          + "|" + gcm \
+                                          + "|" + sim_id
 
-                i += 1
+                        socket.send_json(env)
+                        print "sent env ", i
+                        #envs.append(copy.deepcopy(env))
+                        #print "stored env ", i
+
+                        i += 1
 
     stop_store = time.clock()
 
