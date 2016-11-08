@@ -42,7 +42,7 @@ import monica_io
 
 #PATH_TO_CLIMATE_DATA = "A:/macsur-eu-heat-stress-transformed/"
 PATH_TO_CLIMATE_DATA_SERVER = "/archiv-daten/md/berg/macsur-eu-heat-stress-transformed/"
-PATH_TO_CLIMATE_DATA = "U:/development/macsur-heat-stress-transformed/"
+PATH_TO_CLIMATE_DATA = "B:/md/berg/macsur-eu-heat-stress-transformed/"
 
 def main():
     "main"
@@ -140,7 +140,7 @@ def main():
     }
 
     soil = {}
-    with open("JRC_soil_macsur_v2.csv") as _:
+    with open("JRC_soil_macsur_v3.csv") as _:
         reader = csv.reader(_)
         reader.next()
         for row in reader:
@@ -155,25 +155,50 @@ def main():
                 "oc-topsoil": float(row[11]),
                 "oc-subsoil": float(row[12]),
                 "bd-topsoil": float(row[13]),
-                "bd-subsoil": float(row[14])
+                "bd-subsoil": float(row[14]),
+                "sand-topsoil": float(row[15]),
+                "sand-subsoil": float(row[18]),
+                "clay-topsoil": float(row[16]),
+                "clay-subsoil": float(row[19]),
             }
 
-    def read_calibrated_tsums(path_to_file):
+    def read_calibrated_tsums(path_to_file, crop_id):
         "read calibrated tsums into dict"
         with open(path_to_file) as _:
-            ddd = {}
-            _.next()
-            for line in _:
-                xxs = line.strip().split(",")
-                if len(xxs) > 0:
-                    row_, col_ = xxs[0].split("_")
-                    ddd[(int(row_), int(col_))] = map(int, xxs[1:])
+            rrr = {}
+            reader = csv.reader(_)
+            reader.next()
+            for line in reader:
+                ddd = {}
 
-            return ddd
+                row_, col_ = line[0].split("_")
+                row, col = (int(row_), int(col_))
+                ddd["tsums"] = [
+                    int(line[1]),
+                    int(line[2]),
+                    int(line[3]),
+                    int(line[4]),
+                    int(line[5]),
+                    int(line[6])
+                ]
+                delta = 0
+                if crop_id == "SM":
+                    delta = 1
+                    ddd["tsums"].append(int(line[7]))
+                    ddd["CriticalTemperatureHeatStress"] = float(line[10])
 
-    tsums = {
-      "SM": read_calibrated_tsums("Calibrated_TSUM_Maize.csv"),
-      "WW": read_calibrated_tsums("Calibrated_TSUM_WW.csv")
+                ddd["BeginSensitivePhaseHeatStress"] = float(line[delta + 7])
+                ddd["EndSensitivePhaseHeatStress"] = float(line[delta + 8])
+                ddd["HeatSumIrrigationStart"] = float(line[delta + delta + 9])
+                ddd["HeatSumIrrigationEnd"] = float(line[delta + delta + 10])
+
+                rrr[(row, col)] = ddd
+
+            return rrr
+
+    calib = {
+        "SM": read_calibrated_tsums("Calibrated_TSUM_Maize.csv", "SM"),
+        "WW": read_calibrated_tsums("Calibrated_TSUM_WW.csv", "WW")
     }
 
     def update_soil_crop_dates(row, col, crop_id):
@@ -205,7 +230,8 @@ def main():
             "PermanentWiltingPoint": [pwp, "m3 m-3"],
             "PoreVolume": [sss["sat"], "m3 m-3"],
             "SoilMoisturePercentFC": [sm_percent_fc, "% [0-100]"],
-            "Lambda": 0.5
+            "Sand": sss["sand-topsoil"] / 100.0,
+            "Clay": sss["clay-topsoil"] / 100.0
             }
         sub = {
             "Thickness": [1.7, "m"],
@@ -215,7 +241,8 @@ def main():
             "PermanentWiltingPoint": [pwp, "m3 m-3"],
             "PoreVolume": [sss["sat"], "m3 m-3"],
             "SoilMoisturePercentFC": [sm_percent_fc, "% [0-100]"],
-            "Lambda": 0.5
+            "Sand": sss["sand-subsoil"] / 100.0,
+            "Clay": sss["clay-subsoil"] / 100.0
         }
 
         site["SiteParameters"]["SoilProfileParameters"] = [top, sub]
@@ -275,7 +302,6 @@ def main():
 
     read_climate_data_locally = False
     i = 0
-    envs = []
     start_store = time.clock()
     for crop_id in ["SM", "WW"]:
         #print crop_id, " ...................................."
@@ -290,11 +316,6 @@ def main():
             })
             if not read_climate_data_locally:
                 env["csvViaHeaderOptions"] = sim["climate.csv-options"]
-
-            env["cropRotation"][0]["worksteps"][0]["crop"]["cropParams"]["cultivar"]["StageTemperatureSum"] = tsums[crop_id][(row, col)]
-
-            #if i > 1500:
-            #    break
 
             for period, gcms in periods_gcms.iteritems():
                 #print period, " ................................"
@@ -318,27 +339,35 @@ def main():
                         #read climate data on the server and send just the path to the climate data csv file
                         env["pathToClimateCSV"] = PATH_TO_CLIMATE_DATA_SERVER + period + "/" + gcm + "/" + climate_filename
 
-                    for sim_id, sim_ in sims.iteritems():
-                        #if sim_id != "WL.NL.rain":
-                        #    continue
-                        #sim_id, sim_ = ("potential", sims["potential"])
-                        env["events"] = sim_["output"]
-                        env["params"]["simulationParameters"]["NitrogenResponseOn"] = sim_["NitrogenResponseOn"]
-                        env["params"]["simulationParameters"]["WaterDeficitResponseOn"] = sim_["WaterDeficitResponseOn"]
+                    env["events"] = sims["output"][crop_id]
+
+                    for sim_ in sims["treatments"]:
                         env["params"]["simulationParameters"]["UseAutomaticIrrigation"] = sim_["UseAutomaticIrrigation"]
-                        env["params"]["simulationParameters"]["UseNMinMineralFertilisingMethod"] = sim_["UseNMinMineralFertilisingMethod"]
+                        env["params"]["simulationParameters"]["AutoIrrigationParams"]["amount"] = sims["irrigation-amount"][crop_id]
+
+                        cal = calib[crop_id][(row, col)]
+                        cultivar = env["cropRotation"][0]["worksteps"][0]["crop"]["cropParams"]["cultivar"]
+                        cultivar["StageTemperatureSum"] = cal["tsums"]
+                        if "SensitivePhaseHeatStress" in sim_:
+                            cultivar["BeginSensitivePhaseHeatStress"] = cal["BeginSensitivePhaseHeatStress"] if sim_["SensitivePhaseHeatStress"] else 0
+                            cultivar["EndSensitivePhaseHeatStress"] = cal["EndSensitivePhaseHeatStress"] if sim_["SensitivePhaseHeatStress"] else 0
+                        if crop_id == "SM":
+                            cultivar["CriticalTemperatureHeatStress"] = cal["CriticalTemperatureHeatStress"]
+                        if "HeatSumIrrigation" in sim_ and sim_["HeatSumIrrigation"]:
+                            cultivar["HeatSumIrrigationStart"] = cal["HeatSumIrrigationStart"]
+                            cultivar["HeatSumIrrigationEnd"] = cal["HeatSumIrrigationEnd"]
 
                         env["customId"] = crop_id \
                                           + "|(" + str(row) + "/" + str(col) + ")" \
                                           + "|" + period \
                                           + "|" + gcm \
                                           + "|(" + co2_id + "/" + str(co2_value) + ")" \
-                                          + "|" + sim_id
+                                          + "|" + sim_["TrtNo"] \
+                                          + "|" + sim_["Irrig"] \
+                                          + "|" + sim_["ProdCase"]
 
                         socket.send_json(env)
                         print "sent env ", i, " customId: ", env["customId"]
-                        #envs.append(copy.deepcopy(env))
-                        #print "stored env ", i
 
                         i += 1
 
@@ -346,17 +375,6 @@ def main():
 
     print "sending ", i, " envs took ", (stop_store - start_store), " seconds"
     return
-
-    kkk = 0
-    start_send = time.clock()
-    for env in envs:
-        socket.send_json(env)
-        print "send message ", kkk
-        kkk += 1
-    stop_send = time.clock()
-
-    print "storing ", i, " envs took ", (stop_store - start_store), " seconds"
-    print "sending ", kkk, " envs took ", (stop_send - start_send), " seconds"
 
 
 main()

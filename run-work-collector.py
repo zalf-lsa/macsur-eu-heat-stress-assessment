@@ -31,133 +31,99 @@ import zmq
 import monica_io
 #print "path to monica_io: ", monica_io.__file__
 
-def create_year_output(oids, row, col, rotation, prod_level, values):
-    "create year output lines"
-    row_col = "{}{:03d}".format(row, col)
-    out = []
-    if len(values) > 0:
-        for kkk in range(0, len(values[0])):
-            vals = {}
-            for iii in range(0, len(oids)):
-                oid = oids[iii]
-                val = values[iii][kkk]
-                if iii == 1:
-                    vals[oid["name"]] = (values[iii+1][kkk] - val) / val if val > 0 else 0.0
-                elif iii == 2:
-                    continue
-                else:
-                    if isinstance(val, types.ListType):
-                        for val_ in val:
-                            vals[oid["name"]] = val_
-                    else:
-                        vals[oid["name"]] = val
-
-            if vals.get("Year", 0) > 1982:
-                out.append([
-                    row_col,
-                    rotation,
-                    prod_level,
-                    vals.get("Year", "NA"),
-                    vals.get("SOC", "NA"),
-                    vals.get("Rh", "NA"),
-                    vals.get("NEP", "NA"),
-                    vals.get("Act_ET", "NA"),
-                    vals.get("Act_Ev", "NA"),
-                    vals.get("PercolationRate", "NA"),
-                    vals.get("Irrig", "NA"),
-                    vals.get("NLeach", "NA"),
-                    vals.get("ActNup", "NA"),
-                    vals.get("NFert", "NA"),
-                    vals.get("N2O", "NA")
-                ])
-
-    return out
-
-
-def create_crop_output(oids, row, col, rotation, prod_level, values):
+def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irrig, prod_case, result):
     "create crop output lines"
-    row_col = "{}{:03d}".format(row, col)
+
     out = []
-    if len(values) > 0:
-        for kkk in range(0, len(values[0])):
+    if len(result.get("data", [])) > 0 and len(result["data"][0].get("results", [])) > 0:
+        for kkk in range(0, len(result["data"][0]["results"][0])):
             vals = {}
-            for iii in range(0, len(oids)):
-                oid = oids[iii]
-                val = values[iii][kkk]
-                if iii == 2:
-                    start = datetime.strptime(val, "%Y-%m-%d")
-                    end = datetime.strptime(values[iii+1][kkk], "%Y-%m-%d")
-                    vals[oid["name"]] = (end - start).days
-                elif iii == 3:
-                    continue
-                elif iii == 4:
-                    vals[oid["name"]] = (values[iii+1][kkk] - val) / val if val > 0 else 0.0
-                elif iii == 5:
-                    continue
-                else:
+
+            for data in result.get("data", []):
+                results = data.get("results", [])
+                oids = data.get("outputIds", [])
+
+                assert len(oids) == len(results)
+                for iii in range(0, len(oids)):
+                    oid = oids[iii]
+                    print "len(results[iii]): ", len(results[iii]), " kkk: ", kkk
+                    assert len(results[iii]) > kkk
+                    val = results[iii][kkk]
+
+                    name = oid["name"] if len(oid["displayName"]) == 0 else oid["displayName"]
+
                     if isinstance(val, types.ListType):
                         for val_ in val:
-                            vals[oid["name"]] = val_
+                            vals[name] = val_
                     else:
-                        vals[oid["name"]] = val
+                        vals[name] = val
 
-            if vals.get("Year", 0) > 1982:
+            if vals.get("Year", 0) > 1980:
                 out.append([
-                    row_col,
-                    rotation,
-                    vals.get("Crop", "NA").replace("/", "_").replace(" ", "-"),
-                    prod_level,
-                    vals.get("Year", "NA"),
-                    vals.get("Date", "NA"),
-                    vals.get("SOC", "NA"),
-                    vals.get("Rh", "NA"),
-                    vals.get("NEP", "NA"),
-                    vals.get("Yield", "NA"),
-                    vals.get("Act_ET", "NA"),
-                    vals.get("Act_Ev", "NA"),
-                    vals.get("PercolationRate", "NA"),
-                    vals.get("Irrig", "NA"),
-                    vals.get("NLeach", "NA"),
-                    vals.get("ActNup", "NA"),
-                    vals.get("NFert", "NA"),
-                    vals.get("N2O", "NA"),
-                    vals.get("Nstress", "NA")
+                    "MO",
+                    str(row) + "_" + str(col),
+                    "Maize" if crop_id == "SM" else "WW",
+                    co2_id,
+                    period,
+                    gcm,
+                    str(co2_value),
+                    trt_no,
+                    irrig,
+                    prod_case,
+                    vals.get("Year", "na"),
+                    vals.get("Yield", "na"),
+                    vals.get("AntDOY", "na"),
+                    vals.get("MatDOY", "na"),
+                    vals.get("GNumber", "na"),
+                    vals.get("Biom-an", "na"),
+                    vals.get("Biom-ma", "na"),
+                    vals.get("MaxLAI", "na"),
+                    vals.get("WDrain", "na"),
+                    vals.get("CumET", "na"),
+                    vals.get("SoilAvW", "na") * (1400 if crop_id == "SM" else 1300),
+                    vals.get("Runoff", "na"),
+                    vals["CumET"] - vals["Evap"] if "CumET" in vals and "Evap" in vals else "na",
+                    vals.get("Evap", "na"),
+                    vals.get("CroN-an", "na"),
+                    vals.get("CroN-ma", "na"),
+                    vals.get("GrainN", "na"),
+                    vals.get("Eto", "na"),
+                    vals.get("SowDOY", "na"),
+                    vals.get("EmergDOY", "na"),
+                    vals.get("TcMaxAve", "na"),
+                    vals.get("TMAXAve", "na")
                 ])
 
     return out
 
-def write_data(region_id, year_data, crop_data):
+
+HEADER = "Model,row_col,Crop,ClimPerCO2_ID,period," \
+         + "sce,CO2,TrtNo,Irrigation,ProductionCase," \
+         + "Year,Yield,AntDOY,MatDOY,GNumber,Biom-an,Biom-ma," \
+         + "MaxLAI,WDrain,CumET,SoilAvW,Runoff,Transp,Evap,CroN-an,CroN-ma," \
+         + "GrainN,Eto,SowDOY,EmergDOY,TcMaxAve,TMAXAve" \
+         + "\n"
+
+def write_data(row, col, data):
     "write data"
 
-    path_to_crop_file = "out/" + str(region_id) + "_crop.csv"
-    path_to_year_file = "out/" + str(region_id) + "_year.csv"
+    path_to_file = "out/EU_HS_MO_" + str(row) + "_" + col + "_output.csv"
 
-    if not os.path.isfile(path_to_year_file):
-        with open(path_to_year_file, "w") as _:
-            _.write("ID.cell,rotation,prod.level,year,delta.OC,CO2.emission,NEP,ET,EV,water.perc,irr,N.leach,N.up,N.fert,N2O.em\n")
+    if not os.path.isfile(path_to_file):
+        with open(path_to_file, "w") as _:
+            _.write(HEADER)
 
-    with open(path_to_year_file, 'ab') as _:
+    with open(path_to_file, 'ab') as _:
         writer = csv.writer(_, delimiter=",")
-        for row_ in year_data[region_id]:
+        for row_ in data[(row, col)]:
             writer.writerow(row_)
-        year_data[region_id] = []
-
-    if not os.path.isfile(path_to_crop_file):
-        with open(path_to_crop_file, "w") as _:
-            _.write("ID.cell,rotation,crop,prod.level,year,cycle.length,delta.OC,CO2.emission,NEP,yield,ET,EV,water.perc,irr,N.leach,N.up,N.fert,N2O.em,N.stress\n")
-
-    with open(path_to_crop_file, 'ab') as _:
-        writer = csv.writer(_, delimiter=",")
-        for row_ in crop_data[region_id]:
-            writer.writerow(row_)
-        crop_data[region_id] = []
+        data[(row, col)] = []
 
 
 def collector():
     "collect data from workers"
 
-    year_data = defaultdict(list)
-    crop_data = defaultdict(list)
+    data = defaultdict(list)
 
     i = 0
     context = zmq.Context()
@@ -165,16 +131,16 @@ def collector():
     socket.bind("tcp://*:7777")
     socket.RCVTIMEO = 1000
     leave = False
-    write_normal_output_files = True
+    write_normal_output_files = False
     start_writing_lines_threshold = 1000
     while not leave:
 
         try:
             result = socket.recv_json()
         except:
-            for region_id in year_data.keys():
-                if len(year_data[region_id]) > 0:
-                    write_data(region_id, year_data, crop_data)
+            for row, col in data.keys():
+                if len(data[(row, col)]) > 0:
+                    write_data(row, col, data)
             continue
 
         if result["type"] == "finish":
@@ -182,7 +148,7 @@ def collector():
             leave = True
 
         elif not write_normal_output_files:
-            print "received work result ", i, " customId: ", result.get("customId", ""), " len(year_data): ", len((year_data.values()[:1] or [[]])[0])
+            print "received work result ", i, " customId: ", result.get("customId", "")
 
             custom_id = result["customId"]
             ci_parts = custom_id.split("|")
@@ -193,23 +159,15 @@ def collector():
             gcm = ci_parts[3]
             co2_id, co2_value_ = ci_parts[4][1:-1].split("/")
             co2_value = int(co2_value_)
-            sim_id = ci_parts[5]
+            trt_no = ci_parts[5]
+            irrig = ci_parts[6]
+            prod_case = ci_parts[7]
 
-            for data in result.get("data", []):
-                results = data.get("results", [])
-                orig_spec = data.get("origSpec", "")
-                output_ids = data.get("outputIds", [])
-                if len(results) > 0:
-                    if orig_spec == '"yearly"':
-                        res = []#create_year_output(output_ids, row, col, rotation, prod_level, results)
-                        year_data[region_id].extend(res)
-                    elif orig_spec == '"crop"':
-                        res = []#create_crop_output(output_ids, row, col, rotation, prod_level, results)
-                        crop_data[region_id].extend(res)
+            res = create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irrig, prod_case, result)
+            data[(row, col)].extend(res)
 
-            for region_id in year_data.keys():
-                if len(year_data[region_id]) > start_writing_lines_threshold:
-                    write_data(region_id, year_data, crop_data)
+            if len(data[(row, col)]) > start_writing_lines_threshold:
+                write_data(row, col, data)
 
             i = i + 1
 
@@ -219,10 +177,10 @@ def collector():
             with open("out/out-" + str(i) + ".csv", 'wb') as _:
                 writer = csv.writer(_, delimiter=",")
 
-                for data in result.get("data", []):
-                    results = data.get("results", [])
-                    orig_spec = data.get("origSpec", "")
-                    output_ids = data.get("outputIds", [])
+                for data_ in result.get("data", []):
+                    results = data_.get("results", [])
+                    orig_spec = data_.get("origSpec", "")
+                    output_ids = data_.get("outputIds", [])
 
                     if len(results) > 0:
                         writer.writerow([orig_spec.replace("\"", "")])

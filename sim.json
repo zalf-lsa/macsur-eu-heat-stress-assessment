@@ -36,11 +36,11 @@
 	"NumberOfLayers": 20,
 	"LayerThickness": [0.1, "m"],
 
-	"UseSecondaryYields": true,
-	"NitrogenResponseOn": true,
+	"UseSecondaryYields": false,
+	"NitrogenResponseOn": false,
 	"WaterDeficitResponseOn": true,
-	"EmergenceMoistureControlOn": true,
-	"EmergenceFloodingControlOn": true,
+	"EmergenceMoistureControlOn": false,
+	"EmergenceFloodingControlOn": false,
 
 	"UseAutomaticIrrigation": false,
 	"AutoIrrigationParams": {
@@ -48,11 +48,11 @@
 			"nitrateConcentration": [0, "mg dm-3"],
 			"sulfateConcentration": [0, "mg dm-3"]
 		},
-		"amount": [17, "mm"],
-		"threshold": 0.35
+		"amount": [0, "mm"],
+		"threshold": 0.9
 	},
 
-	"UseNMinMineralFertilisingMethod": true,
+	"UseNMinMineralFertilisingMethod": false,
 	"NMinUserParams": { "min": 40, "max": 120, "delayInDays": 10 },
 	"NMinFertiliserPartition": ["include-from-file", "monica-parameters/mineral-fertilisers/AN.json"],
 	"JulianDayAutomaticFertilising": 89
