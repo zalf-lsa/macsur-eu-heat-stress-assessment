@@ -20,6 +20,7 @@ sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win3
 sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
 print sys.path
 
+import gc
 import csv
 import types
 import os
@@ -30,6 +31,10 @@ import zmq
 #print zmq.pyzmq_version()
 import monica_io
 #print "path to monica_io: ", monica_io.__file__
+
+#log = open("errors.txt", 'w')
+
+#gc.enable()
 
 def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irrig, prod_case, result):
     "create crop output lines"
@@ -43,14 +48,23 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
                 results = data.get("results", [])
                 oids = data.get("outputIds", [])
 
+                #skip empty results, e.g. when event condition haven't been met
+                if len(results) == 0:
+                    continue
+
                 assert len(oids) == len(results)
                 for iii in range(0, len(oids)):
                     oid = oids[iii]
-                    print "len(results[iii]): ", len(results[iii]), " kkk: ", kkk
-                    assert len(results[iii]) > kkk
-                    val = results[iii][kkk]
 
                     name = oid["name"] if len(oid["displayName"]) == 0 else oid["displayName"]
+
+                    if len(results[iii]) < kkk+1:
+                        #log.write("(" + str(row) + "/" + str(col) + ")|" + crop_id 
+                        #          + "|" + period + "|" + gcm + "|" + trt_no + "|" + irrig 
+                        #          + "|" + prod_case + " oid: " + name + " -> only " + str(len(results[iii])) + " years available\n")
+                        break
+
+                    val = results[iii][kkk]
 
                     if isinstance(val, types.ListType):
                         for val_ in val:
@@ -58,11 +72,11 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
                     else:
                         vals[name] = val
 
-            if vals.get("Year", 0) > 1980:
+            if crop_id == "WW" or vals.get("Year", 0) > 1980:
                 out.append([
                     "MO",
                     str(row) + "_" + str(col),
-                    "Maize" if crop_id == "SM" else "WW",
+                    "Maize" if crop_id == "GM" else "WW",
                     co2_id,
                     period,
                     gcm,
@@ -80,7 +94,7 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
                     vals.get("MaxLAI", "na"),
                     vals.get("WDrain", "na"),
                     vals.get("CumET", "na"),
-                    vals.get("SoilAvW", "na") * (1400 if crop_id == "SM" else 1300),
+                    vals.get("SoilAvW", "na") * 100.0,
                     vals.get("Runoff", "na"),
                     vals["CumET"] - vals["Evap"] if "CumET" in vals and "Evap" in vals else "na",
                     vals.get("Evap", "na"),
@@ -107,7 +121,7 @@ HEADER = "Model,row_col,Crop,ClimPerCO2_ID,period," \
 def write_data(row, col, data):
     "write data"
 
-    path_to_file = "out/EU_HS_MO_" + str(row) + "_" + col + "_output.csv"
+    path_to_file = "out/EU_HS_MO_" + str(row) + "_" + str(col) + "_output.csv"
 
     if not os.path.isfile(path_to_file):
         with open(path_to_file, "w") as _:
@@ -118,6 +132,7 @@ def write_data(row, col, data):
         for row_ in data[(row, col)]:
             writer.writerow(row_)
         data[(row, col)] = []
+        #gc.collect()
 
 
 def collector():
@@ -132,7 +147,7 @@ def collector():
     socket.RCVTIMEO = 1000
     leave = False
     write_normal_output_files = False
-    start_writing_lines_threshold = 1000
+    start_writing_lines_threshold = 5880
     while not leave:
 
         try:
@@ -166,7 +181,7 @@ def collector():
             res = create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irrig, prod_case, result)
             data[(row, col)].extend(res)
 
-            if len(data[(row, col)]) > start_writing_lines_threshold:
+            if len(data[(row, col)]) >= start_writing_lines_threshold:
                 write_data(row, col, data)
 
             i = i + 1
@@ -199,3 +214,5 @@ def collector():
 
 
 collector()
+
+#log.close()

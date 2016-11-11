@@ -1,9 +1,9 @@
   {
 	"crops": {
-		"SM": {
+		"GM": {
 			"cropParams": {
 				"species": ["include-from-file", "monica-parameters/crops/maize.json"],
-				"cultivar": ["include-from-file", "monica-parameters/crops/maize/silage maize.json"]
+				"cultivar": ["include-from-file", "monica-parameters/crops/maize/grain maize.json"]
 			},
 			"residueParams": ["include-from-file", "monica-parameters/crop-residues/maize.json"]
 		},
@@ -24,6 +24,7 @@
 	"cropRotation": [
 		{
 			"worksteps": [
+				{ "date": "0000-09-23", "type": "OverwriteSoilMoisture", "soilMoisturePercentFC": 70.0 },
 				{ "date": "0000-09-23", "type": "Seed", "crop": ["ref", "crops", "WW"] },
 				{ "date": "0001-07-27", "type": "Harvest"}
 			]

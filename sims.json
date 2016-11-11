@@ -1,15 +1,31 @@
 {
 	"output": {
-		"SM": [
+		"GM": [
+			"crop", [
+				["Year", "LAST"],
+				["DOY|SowDOY", "FIRST"],
+				["LAI|MaxLAI", "MAX"],
+				["PercolationRate|WDrain", 15, "SUM"],
+				["Act_ET|CumET", "SUM"],
+				["Act_Ev|Evap", "SUM"],
+				["Mois|SoilAvW", [1, 15, "SUM"], "LAST"],
+				["RunOff|Runoff", "SUM"],
+				["ET0|Eto", "SUM"],
+				["Tmax|TMAXAve", "AVG"],
+
+				["Yield", "LAST"],
+				["AbBiom|Biom-ma", "LAST"],
+				["AbBiomN|CroN-ma", "LAST"],
+				["GrainN", "LAST"]
+			],
+
 			{"while": ["Stage", "=", 5]}, [
-				"Year", 
 				["DOY|AntDOY", "FIRST"],
 				["AbBiom|Biom-an", "First"],
-				["AbBiomN|CroN-an", "FIRST"]				
+				["AbBiomN|CroN-an", "FIRST"]
 			],
-					
+
 			{"while": ["Stage", "=", 7]}, [
-				"Year", 
 				["Yield", "FIRST"],
 				["DOY|MatDOY", "FIRST"], 
 				["AbBiom|Biom-ma", "First"],
@@ -17,39 +33,37 @@
 				["GrainN", "FIRST"]
 			],
 			
-			"crop", [
-				"Year",
-				["LAI|MaxLAI", "MAX"],
-				["PercolationRate|WDrain", 14, "SUM"],
-				["Act_ET|CumET", "SUM"],
-				["Act_Ev|Evap", "SUM"],
-				["Mois|SoilAvW", [1, 14, "SUM"], "LAST"],
-				["Runoff", "SUM"],
-				["ET0|Eto", "SUM"],
-				["Tmax|TMAXAve", "AVG"]
-			],
-			
-			"seeding", [
-				"Year",
-				"DOY|SowDOY"
-			],
-			
 			{"while": ["Stage", "=", 2]}, [
-				"Year",
 				["DOY|EmergDOY", "FIRST"]
 			]
 		],
 
 		"WW": [
+			"crop", [
+				["Year", "LAST"],
+				["DOY|SowDOY", "FIRST"],
+				["LAI|MaxLAI", "MAX"],
+				["PercolationRate|WDrain", 15, "SUM"],
+				["Act_ET|CumET", "SUM"],
+				["Act_Ev|Evap", "SUM"],
+				["Mois|SoilAvW", [1, 15, "SUM"], "LAST"],
+				["Runoff", "SUM"],
+				["ET0|Eto", "SUM"],
+				["Tmax|TMAXAve", "AVG"],
+
+				["Yield", "LAST"],
+				["AbBiom|Biom-ma", "LAST"],
+				["AbBiomN|CroN-ma", "LAST"],
+				["GrainN", "LAST"]
+			],
+
 			{"while": ["Stage", "=", 4]}, [
-				"Year", 
 				["DOY|AntDOY", "FIRST"],
 				["AbBiom|Biom-an", "First"],
 				["AbBiomN|CroN-an", "FIRST"]				
 			],
 					
 			{"while": ["Stage", "=", 6]}, [
-				"Year", 
 				["Yield", "FIRST"],
 				["DOY|MatDOY", "FIRST"], 
 				["AbBiom|Biom-ma", "First"],
@@ -57,25 +71,7 @@
 				["GrainN", "FIRST"]
 			],
 			
-			"crop", [
-				"Year",
-				["LAI|MaxLAI", "MAX"],
-				["PercolationRate|WDrain", 13, "SUM"],
-				["Act_ET|CumET", "SUM"],
-				["Act_Ev|Evap", "SUM"],
-				["Mois|SoilAvW", [1, 13, "SUM"], "LAST"],
-				["Runoff", "SUM"],
-				["ET0|Eto", "SUM"],
-				["Tmax|TMAXAve", "AVG"]
-			],
-			
-			"seeding", [
-				"Year",
-				"DOY|SowDOY"
-			],
-			
 			{"while": ["Stage", "=", 2]}, [
-				"Year",
 				["DOY|EmergDOY", "FIRST"]
 			]
 		]
@@ -83,7 +79,7 @@
 
 	"irrigation-amount": {
 		"WW": 10,
-		"SM": 15
+		"GM": 15
 	},
 
 	"treatments": [
@@ -118,7 +114,7 @@
 			"SensitivePhaseHeatStress": true
 		}
 	],
-	
+
 	"__treatments": [
 		{
 			"TrtNo": "T1",
