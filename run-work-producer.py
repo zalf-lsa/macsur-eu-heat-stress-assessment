@@ -133,16 +133,19 @@ def main():
             return ppp
 
     pheno = {
-      "GM": read_pheno("Maize_pheno_v3.csv"),
-      "WW": read_pheno("WW_pheno_v3.csv")
+        "GM": read_pheno("Maize_pheno_v3.csv"),
+        "WW": read_pheno("WW_pheno_v3.csv")
     }
 
     soil = {}
+    row_cols = []
     with open("JRC_soil_macsur_v3.csv") as _:
         reader = csv.reader(_)
         reader.next()
         for row in reader:
-            soil[(int(row[1]), int(row[0]))] = {
+            row_col = (int(row[1]), int(row[0]))
+            row_cols.append(row_col)
+            soil[row_col] = {
                 "elevation": float(row[4]),
                 "latitude": float(row[5]),
                 "depth": float(row[6]),
@@ -294,17 +297,17 @@ def main():
             return ccc
 
 
-    all_rows_cols = set(soil.iterkeys())
-    all_rows_cols.intersection_update(pheno["GM"], pheno["WW"])
-    print "# of rowsCols = ", len(all_rows_cols)
-
-    #sim["climate.csv-options"]["start-date"] = sim["start-date"]
-    #sim["climate.csv-options"]["end-date"] = sim["end-date"]
+    assert len(row_cols) == len(pheno["GM"].keys()) == len(pheno["WW"].keys())
+    print "# of rowsCols = ", len(row_cols)
 
     read_climate_data_locally = False
     i = 0
     start_store = time.clock()
-    for row, col in all_rows_cols:
+    start = 0
+    end = 499
+    row_cols_ = row_cols[start:end+1]
+    print "running from ", row_cols[start], " to ", row_cols[end]
+    for row, col in row_cols_:
         for crop_id in ["WW", "GM"]:
             update_soil_crop_dates(row, col, crop_id)
             env = monica_io.create_env_json_from_json_config({
