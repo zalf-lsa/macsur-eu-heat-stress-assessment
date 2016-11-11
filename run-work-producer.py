@@ -49,8 +49,19 @@ def main():
 
     context = zmq.Context()
     socket = context.socket(zmq.PUSH)
-    port = 6666 if len(sys.argv) == 1 else sys.argv[1]
-    socket.bind("tcp://*:" + str(port))
+    #port = 6666 if len(sys.argv) == 1 else sys.argv[1]
+    config = {
+        "port": 6666,
+        "start": 1,
+        "end": 8157
+    }
+    if len(sys.argv) > 1:
+        for arg in sys.argv[1:]:
+            k,v = arg.split("=")
+            if k in config:
+                config[k] = int(v) 
+
+    socket.bind("tcp://*:" + str(config["port"]))
 
     with open("sim.json") as _:
         sim = json.load(_)
@@ -303,10 +314,10 @@ def main():
     read_climate_data_locally = False
     i = 0
     start_store = time.clock()
-    start = 0
-    end = 499
+    start = config["start"] - 1
+    end = config["end"] - 1
     row_cols_ = row_cols[start:end+1]
-    print "running from ", row_cols[start], " to ", row_cols[end]
+    print "running from ", start, "/", row_cols[start], " to ", end, "/", row_cols[end]
     for row, col in row_cols_:
         for crop_id in ["WW", "GM"]:
             update_soil_crop_dates(row, col, crop_id)
@@ -378,6 +389,7 @@ def main():
     stop_store = time.clock()
 
     print "sending ", i, " envs took ", (stop_store - start_store), " seconds"
+    print "ran from ", start, "/", row_cols[start], " to ", end, "/", row_cols[end]
     return
 
 
