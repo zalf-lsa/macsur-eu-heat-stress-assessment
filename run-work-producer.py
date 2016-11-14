@@ -383,6 +383,8 @@ def main():
                     socket.send_json(env)
                     print "sent env ", i, " customId: ", env["customId"]
                     i += 1
+                    #break
+                #break
             #break
         #break
 

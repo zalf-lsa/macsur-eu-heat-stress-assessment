@@ -151,7 +151,14 @@ def collector():
     while not leave:
 
         try:
-            result = socket.recv_json()
+            #result = socket.recv_json()
+            result = socket.recv_json(encoding="latin-1")
+            #result = socket.recv_string(encoding="latin-1")
+            #result = socket.recv_string()
+            #print result
+            #with open("out/out-latin1.csv", "w") as _:
+            #    _.write(result)
+            #continue
         except:
             for row, col in data.keys():
                 if len(data[(row, col)]) > 0:
