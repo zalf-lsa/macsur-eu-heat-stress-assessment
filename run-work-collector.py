@@ -16,8 +16,9 @@
 # Copyright (C: Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 import sys
-sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
-sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
+#sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
+#sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
+sys.path.insert(0, "C:\\Program Files (x86)\\MONICA")
 print sys.path
 
 import gc
@@ -41,10 +42,11 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
 
     out = []
     if len(result.get("data", [])) > 0 and len(result["data"][0].get("results", [])) > 0:
+        year_to_vals = defaultdict(dict)
         for kkk in range(0, len(result["data"][0]["results"][0])):
-            vals = {}
-
+            
             for data in result.get("data", []):
+                vals = {}
                 results = data.get("results", [])
                 oids = data.get("outputIds", [])
 
@@ -72,7 +74,10 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
                     else:
                         vals[name] = val
 
-            if crop_id == "WW" or vals.get("Year", 0) > 1980:
+                year_to_vals[vals.get("Year", 0)].update(vals)
+
+        for year, vals in year_to_vals.iteritems():
+            if len(vals) > 0 and (crop_id == "WW" or year > 1980):
                 out.append([
                     "MO",
                     str(row) + "_" + str(col),
@@ -84,7 +89,12 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
                     trt_no,
                     irrig,
                     prod_case,
-                    vals.get("Year", "na"),
+                    year,
+
+                    vals.get("Stage", "na"),
+                    vals.get("HeatRed", "na"),
+                    vals.get("RelDev", "na"),
+
                     vals.get("Yield", "na"),
                     vals.get("AntDOY", "na"),
                     vals.get("MatDOY", "na"),
@@ -94,7 +104,7 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
                     vals.get("MaxLAI", "na"),
                     vals.get("WDrain", "na"),
                     vals.get("CumET", "na"),
-                    vals.get("SoilAvW", "na") * 100.0,
+                    vals.get("SoilAvW", "na") * 100.0 if "SoilAvW" in vals else "na",
                     vals.get("Runoff", "na"),
                     vals["CumET"] - vals["Evap"] if "CumET" in vals and "Evap" in vals else "na",
                     vals.get("Evap", "na"),
@@ -113,7 +123,7 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
 
 HEADER = "Model,row_col,Crop,ClimPerCO2_ID,period," \
          + "sce,CO2,TrtNo,Irrigation,ProductionCase," \
-         + "Year,Yield,AntDOY,MatDOY,GNumber,Biom-an,Biom-ma," \
+         + "Year,Stage,HeatRed,RelDev,Yield,AntDOY,MatDOY,GNumber,Biom-an,Biom-ma," \
          + "MaxLAI,WDrain,CumET,SoilAvW,Runoff,Transp,Evap,CroN-an,CroN-ma," \
          + "GrainN,Eto,SowDOY,EmergDOY,TcMaxAve,TMAXAve" \
          + "\n"
@@ -132,7 +142,6 @@ def write_data(row, col, data):
         for row_ in data[(row, col)]:
             writer.writerow(row_)
         data[(row, col)] = []
-        #gc.collect()
 
 
 def collector():
@@ -143,7 +152,7 @@ def collector():
     i = 0
     context = zmq.Context()
     socket = context.socket(zmq.PULL)
-    socket.bind("tcp://*:7777")
+    socket.connect("tcp://cluster2:7777")
     socket.RCVTIMEO = 1000
     leave = False
     write_normal_output_files = False

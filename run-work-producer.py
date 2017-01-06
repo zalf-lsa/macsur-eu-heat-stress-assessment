@@ -25,9 +25,10 @@ from datetime import date, datetime, timedelta
 from collections import defaultdict
 #import types
 import sys
-sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
+#sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
 #sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Debug")
-sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
+#sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
+sys.path.insert(0, "C:\\Program Files (x86)\\MONICA")
 print sys.path
 #sys.path.append('C:/Users/berg.ZALF-AD/GitHub/util/soil')
 #from soil_conversion import *
@@ -41,8 +42,9 @@ import monica_io
 #print "sys.version: ", sys.version
 
 #PATH_TO_CLIMATE_DATA = "A:/macsur-eu-heat-stress-transformed/"
-PATH_TO_CLIMATE_DATA_SERVER = "/archiv-daten/md/berg/macsur-eu-heat-stress-transformed/"
-PATH_TO_CLIMATE_DATA = "B:/md/berg/macsur-eu-heat-stress-transformed/"
+PATH_TO_CLIMATE_DATA_SERVER = "/archiv-daten/md/projects/macsur-eu-heat-stress-assessment/climate-data/transformed/"
+PATH_TO_CLIMATE_DATA = "P:/macsur-eu-heat-stress-assessment/climate-data/transformed" 
+INCLUDE_FILE_BASE_PATH = "C:/Users/berg.ZALF-AD.000/MONICA"
 
 def main():
     "main"
@@ -61,7 +63,7 @@ def main():
             if k in config:
                 config[k] = int(v) 
 
-    socket.bind("tcp://*:" + str(config["port"]))
+    socket.connect("tcp://cluster2:" + str(config["port"]))
 
     with open("sim.json") as _:
         sim = json.load(_)
@@ -75,7 +77,7 @@ def main():
     with open("sims.json") as _:
         sims = json.load(_)
 
-    sim["include-file-base-path"] = "C:/Users/berg.ZALF-AD/MONICA"
+    sim["include-file-base-path"] = INCLUDE_FILE_BASE_PATH
 
     period_gcm_co2s = [
         {"id": "C1", "period": "0", "gcm": "0_0", "co2_value": 360},
@@ -317,6 +319,8 @@ def main():
     start = config["start"] - 1
     end = config["end"] - 1
     row_cols_ = row_cols[start:end+1]
+    row_cols_ = [(108,106), (89,82), (71,89), (58,57), (77,109), (66,117), (46,151), (101,139), (116,78), (144,123)]
+    row_cols_ = [(66,117)]
     print "running from ", start, "/", row_cols[start], " to ", end, "/", row_cols[end]
     for row, col in row_cols_:
         for crop_id in ["WW", "GM"]:
@@ -360,7 +364,7 @@ def main():
 
                     cal = calib[crop_id][(row, col)]
                     cultivar = env["cropRotation"][0]["worksteps"][1]["crop"]["cropParams"]["cultivar"]
-                    cultivar["CropSpecificMaxRootingDepth"] = 1.5
+                    cultivar["CropSpecificMaxRootingDepth"] = 1.5 #defined in protocol, depth from soil data is not used
                     cultivar["StageTemperatureSum"] = cal["tsums"]
                     if "SensitivePhaseHeatStress" in sim_:
                         cultivar["BeginSensitivePhaseHeatStress"] = cal["BeginSensitivePhaseHeatStress"] if sim_["SensitivePhaseHeatStress"] else 0
