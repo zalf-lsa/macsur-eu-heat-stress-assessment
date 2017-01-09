@@ -43,36 +43,36 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
     out = []
     if len(result.get("data", [])) > 0 and len(result["data"][0].get("results", [])) > 0:
         year_to_vals = defaultdict(dict)
-        for kkk in range(0, len(result["data"][0]["results"][0])):
-            
-            for data in result.get("data", []):
+        
+        for data in result.get("data", []):
+            results = data.get("results", [])
+            oids = data.get("outputIds", [])
+
+            #skip empty results, e.g. when event condition haven't been met
+            if len(results) == 0:
+                continue
+
+            assert len(oids) == len(results)
+            for kkk in range(0, len(results[0])):
                 vals = {}
-                results = data.get("results", [])
-                oids = data.get("outputIds", [])
-
-                #skip empty results, e.g. when event condition haven't been met
-                if len(results) == 0:
-                    continue
-
-                assert len(oids) == len(results)
+            
                 for iii in range(0, len(oids)):
+                        
                     oid = oids[iii]
+                    
+                    val = results[iii][kkk]
 
                     name = oid["name"] if len(oid["displayName"]) == 0 else oid["displayName"]
-
-                    if len(results[iii]) < kkk+1:
-                        #log.write("(" + str(row) + "/" + str(col) + ")|" + crop_id 
-                        #          + "|" + period + "|" + gcm + "|" + trt_no + "|" + irrig 
-                        #          + "|" + prod_case + " oid: " + name + " -> only " + str(len(results[iii])) + " years available\n")
-                        break
-
-                    val = results[iii][kkk]
 
                     if isinstance(val, types.ListType):
                         for val_ in val:
                             vals[name] = val_
                     else:
                         vals[name] = val
+
+                if "Year" not in vals:
+                    print "Missing Year in result section. Skipping results section."
+                    continue
 
                 year_to_vals[vals.get("Year", 0)].update(vals)
 

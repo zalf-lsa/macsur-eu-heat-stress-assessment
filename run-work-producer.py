@@ -319,8 +319,8 @@ def main():
     start = config["start"] - 1
     end = config["end"] - 1
     row_cols_ = row_cols[start:end+1]
-    row_cols_ = [(108,106), (89,82), (71,89), (58,57), (77,109), (66,117), (46,151), (101,139), (116,78), (144,123)]
-    row_cols_ = [(66,117)]
+    #row_cols_ = [(108,106), (89,82), (71,89), (58,57), (77,109), (66,117), (46,151), (101,139), (116,78), (144,123)]
+    #row_cols_ = [(66,117)]
     print "running from ", start, "/", row_cols[start], " to ", end, "/", row_cols[end]
     for row, col in row_cols_:
         for crop_id in ["WW", "GM"]:
