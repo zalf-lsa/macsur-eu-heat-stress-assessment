@@ -1,11 +1,12 @@
 {
 	"output": {
+		"_x": [
+			["Stage", "LAST"],
+			["HeatRed", "LAST"],
+			["RelDev", "LAST"]
+		],
 		"GM": [
 			"crop", [
-				["Stage", "LAST"],
-				["HeatRed", "LAST"],
-				["RelDev", "LAST"],
-
 				["Year", "LAST"],
 				["DOY|SowDOY", "FIRST"],
 				["LAI|MaxLAI", "MAX"],
@@ -47,10 +48,6 @@
 
 		"WW": [
 			"crop", [
-				["Stage", "LAST"],
-				["HeatRed", "LAST"],
-				["RelDev", "LAST"],
-
 				["Year", "LAST"],
 				["DOY|SowDOY", "FIRST"],
 				["LAI|MaxLAI", "MAX"],

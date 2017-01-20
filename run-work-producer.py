@@ -188,23 +188,35 @@ def main():
                 row_, col_ = line[0].split("_")
                 row, col = (int(row_), int(col_))
                 ddd["tsums"] = [
-                    int(line[1]),
-                    int(line[2]),
-                    int(line[3]),
-                    int(line[4]),
-                    int(line[5]),
-                    int(line[6])
+                    float(line[1]),
+                    float(line[2]),
+                    float(line[3]),
+                    float(line[4]),
+                    float(line[5]),
+                    float(line[6])
                 ]
                 delta = 0
                 if crop_id == "GM":
                     delta = 1
-                    ddd["tsums"].append(int(line[7]))
+                    ddd["tsums"].append(float(line[7]))
                     ddd["CriticalTemperatureHeatStress"] = float(line[10])
 
                 ddd["BeginSensitivePhaseHeatStress"] = float(line[delta + 7])
                 ddd["EndSensitivePhaseHeatStress"] = float(line[delta + 8])
                 ddd["HeatSumIrrigationStart"] = float(line[delta + delta + 9])
                 ddd["HeatSumIrrigationEnd"] = float(line[delta + delta + 10])
+
+                ddd["OrganGrowthRespiration_0"] = float(line[delta + delta + 11])
+                ddd["OrganGrowthRespiration_1"] = float(line[delta + delta + 12])
+                ddd["OrganGrowthRespiration_2"] = float(line[delta + delta + 13])
+                ddd["OrganGrowthRespiration_3"] = float(line[delta + delta + 14])
+
+                ddd["OrganMaintenanceRespiration_0"] = float(line[delta + delta + 15])
+                ddd["OrganMaintenanceRespiration_1"] = float(line[delta + delta + 16])
+                ddd["OrganMaintenanceRespiration_2"] = float(line[delta + delta + 17])
+                ddd["OrganMaintenanceRespiration_3"] = float(line[delta + delta + 18])
+
+                ddd["MaxAssimilationRate"] = float(line[delta + delta + 19])
 
                 rrr[(row, col)] = ddd
 
@@ -363,6 +375,7 @@ def main():
                     env["params"]["simulationParameters"]["AutoIrrigationParams"]["amount"] = sims["irrigation-amount"][crop_id]
 
                     cal = calib[crop_id][(row, col)]
+                    species = env["cropRotation"][0]["worksteps"][1]["crop"]["cropParams"]["species"]
                     cultivar = env["cropRotation"][0]["worksteps"][1]["crop"]["cropParams"]["cultivar"]
                     cultivar["CropSpecificMaxRootingDepth"] = 1.5 #defined in protocol, depth from soil data is not used
                     cultivar["StageTemperatureSum"] = cal["tsums"]
@@ -374,6 +387,10 @@ def main():
                     if "HeatSumIrrigation" in sim_ and sim_["HeatSumIrrigation"]:
                         cultivar["HeatSumIrrigationStart"] = cal["HeatSumIrrigationStart"]
                         cultivar["HeatSumIrrigationEnd"] = cal["HeatSumIrrigationEnd"]
+                    for kkk in range(0, 4):
+                        species["OrganGrowthRespiration"][kkk] = cal["OrganGrowthRespiration_" + str(kkk)]
+                        species["OrganMaintenanceRespiration"][kkk] = cal["OrganMaintenanceRespiration_" + str(kkk)]
+                    species["MaxAssimilationRate"] = cal["MaxAssimilationRate"]
 
                     env["customId"] = crop_id \
                                         + "|(" + str(row) + "/" + str(col) + ")" \

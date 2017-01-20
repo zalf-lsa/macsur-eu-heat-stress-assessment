@@ -91,9 +91,9 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
                     prod_case,
                     year,
 
-                    vals.get("Stage", "na"),
-                    vals.get("HeatRed", "na"),
-                    vals.get("RelDev", "na"),
+                    #vals.get("Stage", "na"),
+                    #vals.get("HeatRed", "na"),
+                    #vals.get("RelDev", "na"),
 
                     vals.get("Yield", "na"),
                     vals.get("AntDOY", "na"),
@@ -120,10 +120,11 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
 
     return out
 
-
+#+"Stage,HeatRed,RelDev,"\
 HEADER = "Model,row_col,Crop,ClimPerCO2_ID,period," \
          + "sce,CO2,TrtNo,Irrigation,ProductionCase," \
-         + "Year,Stage,HeatRed,RelDev,Yield,AntDOY,MatDOY,GNumber,Biom-an,Biom-ma," \
+         + "Year," \
+         + "Yield,AntDOY,MatDOY,GNumber,Biom-an,Biom-ma," \
          + "MaxLAI,WDrain,CumET,SoilAvW,Runoff,Transp,Evap,CroN-an,CroN-ma," \
          + "GrainN,Eto,SowDOY,EmergDOY,TcMaxAve,TMAXAve" \
          + "\n"
