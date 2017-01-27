@@ -218,6 +218,10 @@ def main():
 
                 ddd["MaxAssimilationRate"] = float(line[delta + delta + 19])
 
+                ddd["MinimumTemperatureForAssimilation"] = float(line[delta + delta + 20])
+                ddd["OptimumTemperatureForAssimilation"] = float(line[delta + delta + 21])
+                ddd["MaximumTemperatureForAssimilation"] = float(line[delta + delta + 22])
+
                 rrr[(row, col)] = ddd
 
             return rrr
@@ -346,7 +350,8 @@ def main():
             if not read_climate_data_locally:
                 env["csvViaHeaderOptions"] = sim["climate.csv-options"]
 
-            for pgc in period_gcm_co2s:
+            #for pgc in period_gcm_co2s:
+            for pgc in [period_gcm_co2s[0]]:
                 co2_id = pgc["id"]
                 co2_value = pgc["co2_value"]
                 period = pgc["period"]
@@ -390,7 +395,13 @@ def main():
                     for kkk in range(0, 4):
                         species["OrganGrowthRespiration"][kkk] = cal["OrganGrowthRespiration_" + str(kkk)]
                         species["OrganMaintenanceRespiration"][kkk] = cal["OrganMaintenanceRespiration_" + str(kkk)]
-                    species["MaxAssimilationRate"] = cal["MaxAssimilationRate"]
+                    cultivar["MaxAssimilationRate"] = cal["MaxAssimilationRate"]
+                    species["MinimumTemperatureForAssimilation"] = cal["MinimumTemperatureForAssimilation"]
+                    species["OptimumTemperatureForAssimilation"] = cal["OptimumTemperatureForAssimilation"]
+                    species["MaximumTemperatureForAssimilation"] = cal["MaximumTemperatureForAssimilation"]
+                    
+                    if crop_id == "WW":
+                        cultivar["OrganSenescenceRate"] = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0.05, 0.05, 0], [0, 0, 0, 0]]
 
                     env["customId"] = crop_id \
                                         + "|(" + str(row) + "/" + str(col) + ")" \
