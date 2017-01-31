@@ -129,14 +129,16 @@ HEADER = "Model,row_col,Crop,ClimPerCO2_ID,period," \
          + "GrainN,Eto,SowDOY,EmergDOY,TcMaxAve,TMAXAve" \
          + "\n"
 
+#overwrite_list = set()
 def write_data(row, col, data):
     "write data"
 
     path_to_file = "out/EU_HS_MO_" + str(row) + "_" + str(col) + "_output.csv"
 
-    if not os.path.isfile(path_to_file):
+    if not os.path.isfile(path_to_file):# or (row, col) not in overwrite_list:
         with open(path_to_file, "w") as _:
             _.write(HEADER)
+        #overwrite_list.add((row, col))
 
     with open(path_to_file, 'ab') as _:
         writer = csv.writer(_, delimiter=",")

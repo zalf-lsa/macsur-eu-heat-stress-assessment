@@ -350,8 +350,7 @@ def main():
             if not read_climate_data_locally:
                 env["csvViaHeaderOptions"] = sim["climate.csv-options"]
 
-            #for pgc in period_gcm_co2s:
-            for pgc in [period_gcm_co2s[0]]:
+            for pgc in period_gcm_co2s:
                 co2_id = pgc["id"]
                 co2_value = pgc["co2_value"]
                 period = pgc["period"]

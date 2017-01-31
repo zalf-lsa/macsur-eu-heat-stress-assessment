@@ -31,7 +31,7 @@ with open("macsur-heat-stress-study-extent.asc") as file_:
         ASC.append(line_)
 
 
-PATH_TO_OUTPUTS = "P:/macsur-eu-heat-stress-assessment/outputs-rerun-2017-01-25/"
+PATH_TO_OUTPUTS = "P:/macsur-eu-heat-stress-assessment/outputs/rerun-2017-01-30/"
 FILES = os.listdir(PATH_TO_OUTPUTS)
 
 OUTPUTS = [
