@@ -29,6 +29,7 @@ import sys
 #sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
 #sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Debug")
 #sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
+#sys.path.insert(0, "C:\\Program Files (x86)\\MONICA")
 print sys.path
 #sys.path.append('C:/Users/berg.ZALF-AD/GitHub/util/soil')
 #from soil_conversion import *
@@ -42,8 +43,9 @@ import monica_io
 #print "sys.version: ", sys.version
 
 #PATH_TO_CLIMATE_DATA = "A:/macsur-eu-heat-stress-transformed/"
-PATH_TO_CLIMATE_DATA_SERVER = "/archiv-daten/md/berg/macsur-eu-heat-stress-transformed/"
-PATH_TO_CLIMATE_DATA = "B:/md/berg/macsur-eu-heat-stress-transformed/"
+PATH_TO_CLIMATE_DATA_SERVER = "/archiv-daten/md/projects/macsur-eu-heat-stress-assessment/climate-data/transformed/"
+PATH_TO_CLIMATE_DATA = "P:/macsur-eu-heat-stress-assessment/climate-data/transformed" 
+INCLUDE_FILE_BASE_PATH = "C:/Users/berg.ZALF-AD.000/MONICA"
 
 def main():
     "main"
@@ -62,7 +64,7 @@ def main():
             if k in config:
                 config[k] = int(v) 
 
-    socket.bind("tcp://*:" + str(config["port"]))
+    socket.connect("tcp://cluster2:" + str(config["port"]))
 
     with open("sim.json") as _:
         sim = json.load(_)
@@ -76,7 +78,7 @@ def main():
     with open("sims.json") as _:
         sims = json.load(_)
 
-    sim["include-file-base-path"] = "C:/Users/berg.ZALF-AD/MONICA"
+    sim["include-file-base-path"] = INCLUDE_FILE_BASE_PATH
 
     period_gcm_co2s = [
         {"id": "C1", "period": "0", "gcm": "0_0", "co2_value": 360},
@@ -187,23 +189,39 @@ def main():
                 row_, col_ = line[0].split("_")
                 row, col = (int(row_), int(col_))
                 ddd["tsums"] = [
-                    int(line[1]),
-                    int(line[2]),
-                    int(line[3]),
-                    int(line[4]),
-                    int(line[5]),
-                    int(line[6])
+                    float(line[1]),
+                    float(line[2]),
+                    float(line[3]),
+                    float(line[4]),
+                    float(line[5]),
+                    float(line[6])
                 ]
                 delta = 0
                 if crop_id == "GM":
                     delta = 1
-                    ddd["tsums"].append(int(line[7]))
+                    ddd["tsums"].append(float(line[7]))
                     ddd["CriticalTemperatureHeatStress"] = float(line[10])
 
                 ddd["BeginSensitivePhaseHeatStress"] = float(line[delta + 7])
                 ddd["EndSensitivePhaseHeatStress"] = float(line[delta + 8])
                 ddd["HeatSumIrrigationStart"] = float(line[delta + delta + 9])
                 ddd["HeatSumIrrigationEnd"] = float(line[delta + delta + 10])
+
+                ddd["OrganGrowthRespiration_0"] = float(line[delta + delta + 11])
+                ddd["OrganGrowthRespiration_1"] = float(line[delta + delta + 12])
+                ddd["OrganGrowthRespiration_2"] = float(line[delta + delta + 13])
+                ddd["OrganGrowthRespiration_3"] = float(line[delta + delta + 14])
+
+                ddd["OrganMaintenanceRespiration_0"] = float(line[delta + delta + 15])
+                ddd["OrganMaintenanceRespiration_1"] = float(line[delta + delta + 16])
+                ddd["OrganMaintenanceRespiration_2"] = float(line[delta + delta + 17])
+                ddd["OrganMaintenanceRespiration_3"] = float(line[delta + delta + 18])
+
+                ddd["MaxAssimilationRate"] = float(line[delta + delta + 19])
+
+                ddd["MinimumTemperatureForAssimilation"] = float(line[delta + delta + 20])
+                ddd["OptimumTemperatureForAssimilation"] = float(line[delta + delta + 21])
+                ddd["MaximumTemperatureForAssimilation"] = float(line[delta + delta + 22])
 
                 rrr[(row, col)] = ddd
 
@@ -318,6 +336,8 @@ def main():
     start = config["start"] - 1
     end = config["end"] - 1
     row_cols_ = row_cols[start:end+1]
+    #row_cols_ = [(108,106), (89,82), (71,89), (58,57), (77,109), (66,117), (46,151), (101,139), (116,78), (144,123)]
+    #row_cols_ = [(66,117)]
     print "running from ", start, "/", row_cols[start], " to ", end, "/", row_cols[end]
     for row, col in row_cols_:
         for crop_id in ["WW", "GM"]:
@@ -360,8 +380,9 @@ def main():
                     env["params"]["simulationParameters"]["AutoIrrigationParams"]["amount"] = sims["irrigation-amount"][crop_id]
 
                     cal = calib[crop_id][(row, col)]
+                    species = env["cropRotation"][0]["worksteps"][1]["crop"]["cropParams"]["species"]
                     cultivar = env["cropRotation"][0]["worksteps"][1]["crop"]["cropParams"]["cultivar"]
-                    cultivar["CropSpecificMaxRootingDepth"] = 1.5
+                    cultivar["CropSpecificMaxRootingDepth"] = 1.5 #defined in protocol, depth from soil data is not used
                     cultivar["StageTemperatureSum"] = cal["tsums"]
                     if "SensitivePhaseHeatStress" in sim_:
                         cultivar["BeginSensitivePhaseHeatStress"] = cal["BeginSensitivePhaseHeatStress"] if sim_["SensitivePhaseHeatStress"] else 0
@@ -371,6 +392,16 @@ def main():
                     if "HeatSumIrrigation" in sim_ and sim_["HeatSumIrrigation"]:
                         cultivar["HeatSumIrrigationStart"] = cal["HeatSumIrrigationStart"]
                         cultivar["HeatSumIrrigationEnd"] = cal["HeatSumIrrigationEnd"]
+                    for kkk in range(0, 4):
+                        species["OrganGrowthRespiration"][kkk] = cal["OrganGrowthRespiration_" + str(kkk)]
+                        species["OrganMaintenanceRespiration"][kkk] = cal["OrganMaintenanceRespiration_" + str(kkk)]
+                    cultivar["MaxAssimilationRate"] = cal["MaxAssimilationRate"]
+                    species["MinimumTemperatureForAssimilation"] = cal["MinimumTemperatureForAssimilation"]
+                    species["OptimumTemperatureForAssimilation"] = cal["OptimumTemperatureForAssimilation"]
+                    species["MaximumTemperatureForAssimilation"] = cal["MaximumTemperatureForAssimilation"]
+                    
+                    if crop_id == "WW":
+                        cultivar["OrganSenescenceRate"] = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0.05, 0.05, 0], [0, 0, 0, 0]]
 
                     env["customId"] = crop_id \
                                         + "|(" + str(row) + "/" + str(col) + ")" \

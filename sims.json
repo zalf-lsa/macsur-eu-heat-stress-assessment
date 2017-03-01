@@ -1,5 +1,10 @@
 {
 	"output": {
+		"_x": [
+			["Stage", "LAST"],
+			["HeatRed", "LAST"],
+			["RelDev", "LAST"]
+		],
 		"GM": [
 			"crop", [
 				["Year", "LAST"],
@@ -20,12 +25,14 @@
 			],
 
 			{"while": ["Stage", "=", 5]}, [
+				["Year", "LAST"],
 				["DOY|AntDOY", "FIRST"],
 				["AbBiom|Biom-an", "First"],
 				["AbBiomN|CroN-an", "FIRST"]
 			],
 
 			{"while": ["Stage", "=", 7]}, [
+				["Year", "LAST"],
 				["Yield", "FIRST"],
 				["DOY|MatDOY", "FIRST"], 
 				["AbBiom|Biom-ma", "First"],
@@ -34,6 +41,7 @@
 			],
 			
 			{"while": ["Stage", "=", 2]}, [
+				["Year", "LAST"],
 				["DOY|EmergDOY", "FIRST"]
 			]
 		],
@@ -58,12 +66,14 @@
 			],
 
 			{"while": ["Stage", "=", 4]}, [
+				["Year", "LAST"],
 				["DOY|AntDOY", "FIRST"],
 				["AbBiom|Biom-an", "First"],
 				["AbBiomN|CroN-an", "FIRST"]				
 			],
 					
 			{"while": ["Stage", "=", 6]}, [
+				["Year", "LAST"],
 				["Yield", "FIRST"],
 				["DOY|MatDOY", "FIRST"], 
 				["AbBiom|Biom-ma", "First"],
@@ -72,6 +82,7 @@
 			],
 			
 			{"while": ["Stage", "=", 2]}, [
+				["Year", "LAST"],
 				["DOY|EmergDOY", "FIRST"]
 			]
 		]

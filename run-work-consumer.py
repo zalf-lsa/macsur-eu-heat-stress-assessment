@@ -16,8 +16,9 @@
 # Copyright (C: Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 import sys
-sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
-sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
+#sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
+#sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
+sys.path.insert(0, "C:\\Program Files (x86)\\MONICA")
 print sys.path
 
 import gc
@@ -41,30 +42,27 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
 
     out = []
     if len(result.get("data", [])) > 0 and len(result["data"][0].get("results", [])) > 0:
-        for kkk in range(0, len(result["data"][0]["results"][0])):
-            vals = {}
+        year_to_vals = defaultdict(dict)
+        
+        for data in result.get("data", []):
+            results = data.get("results", [])
+            oids = data.get("outputIds", [])
 
-            for data in result.get("data", []):
-                results = data.get("results", [])
-                oids = data.get("outputIds", [])
+            #skip empty results, e.g. when event condition haven't been met
+            if len(results) == 0:
+                continue
 
-                #skip empty results, e.g. when event condition haven't been met
-                if len(results) == 0:
-                    continue
-
-                assert len(oids) == len(results)
+            assert len(oids) == len(results)
+            for kkk in range(0, len(results[0])):
+                vals = {}
+            
                 for iii in range(0, len(oids)):
+                        
                     oid = oids[iii]
+                    
+                    val = results[iii][kkk]
 
                     name = oid["name"] if len(oid["displayName"]) == 0 else oid["displayName"]
-
-                    if len(results[iii]) < kkk+1:
-                        #log.write("(" + str(row) + "/" + str(col) + ")|" + crop_id 
-                        #          + "|" + period + "|" + gcm + "|" + trt_no + "|" + irrig 
-                        #          + "|" + prod_case + " oid: " + name + " -> only " + str(len(results[iii])) + " years available\n")
-                        break
-
-                    val = results[iii][kkk]
 
                     if isinstance(val, types.ListType):
                         for val_ in val:
@@ -72,7 +70,14 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
                     else:
                         vals[name] = val
 
-            if crop_id == "WW" or vals.get("Year", 0) > 1980:
+                if "Year" not in vals:
+                    print "Missing Year in result section. Skipping results section."
+                    continue
+
+                year_to_vals[vals.get("Year", 0)].update(vals)
+
+        for year, vals in year_to_vals.iteritems():
+            if len(vals) > 0 and (crop_id == "WW" or year > 1980):
                 out.append([
                     "MO",
                     str(row) + "_" + str(col),
@@ -84,7 +89,12 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
                     trt_no,
                     irrig,
                     prod_case,
-                    vals.get("Year", "na"),
+                    year,
+
+                    #vals.get("Stage", "na"),
+                    #vals.get("HeatRed", "na"),
+                    #vals.get("RelDev", "na"),
+
                     vals.get("Yield", "na"),
                     vals.get("AntDOY", "na"),
                     vals.get("MatDOY", "na"),
@@ -94,7 +104,7 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
                     vals.get("MaxLAI", "na"),
                     vals.get("WDrain", "na"),
                     vals.get("CumET", "na"),
-                    vals.get("SoilAvW", "na") * 100.0,
+                    vals.get("SoilAvW", "na") * 100.0 if "SoilAvW" in vals else "na",
                     vals.get("Runoff", "na"),
                     vals["CumET"] - vals["Evap"] if "CumET" in vals and "Evap" in vals else "na",
                     vals.get("Evap", "na"),
@@ -110,29 +120,31 @@ def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irr
 
     return out
 
-
+#+"Stage,HeatRed,RelDev,"\
 HEADER = "Model,row_col,Crop,ClimPerCO2_ID,period," \
          + "sce,CO2,TrtNo,Irrigation,ProductionCase," \
-         + "Year,Yield,AntDOY,MatDOY,GNumber,Biom-an,Biom-ma," \
+         + "Year," \
+         + "Yield,AntDOY,MatDOY,GNumber,Biom-an,Biom-ma," \
          + "MaxLAI,WDrain,CumET,SoilAvW,Runoff,Transp,Evap,CroN-an,CroN-ma," \
          + "GrainN,Eto,SowDOY,EmergDOY,TcMaxAve,TMAXAve" \
          + "\n"
 
+#overwrite_list = set()
 def write_data(row, col, data):
     "write data"
 
     path_to_file = "out/EU_HS_MO_" + str(row) + "_" + str(col) + "_output.csv"
 
-    if not os.path.isfile(path_to_file):
+    if not os.path.isfile(path_to_file):# or (row, col) not in overwrite_list:
         with open(path_to_file, "w") as _:
             _.write(HEADER)
+        #overwrite_list.add((row, col))
 
     with open(path_to_file, 'ab') as _:
         writer = csv.writer(_, delimiter=",")
         for row_ in data[(row, col)]:
             writer.writerow(row_)
         data[(row, col)] = []
-        #gc.collect()
 
 
 def collector():
@@ -143,7 +155,7 @@ def collector():
     i = 0
     context = zmq.Context()
     socket = context.socket(zmq.PULL)
-    socket.bind("tcp://*:7777")
+    socket.connect("tcp://cluster2:7777")
     socket.RCVTIMEO = 1000
     leave = False
     write_normal_output_files = False
