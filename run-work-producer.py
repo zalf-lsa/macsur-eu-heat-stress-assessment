@@ -7,6 +7,7 @@
 
 # Authors:
 # Michael Berg-Mohnicke <michael.berg@zalf.de>
+# Tommaso Stella <tommaso.stella@zalf.de>
 #
 # Maintainers:
 # Currently maintained by the authors.
@@ -25,9 +26,9 @@ from datetime import date, datetime, timedelta
 from collections import defaultdict
 #import types
 import sys
-sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
+#sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
 #sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Debug")
-sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
+#sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
 print sys.path
 #sys.path.append('C:/Users/berg.ZALF-AD/GitHub/util/soil')
 #from soil_conversion import *

@@ -2,15 +2,15 @@
 	"crops": {
 		"GM": {
 			"cropParams": {
-				"species": ["include-from-file", "monica-parameters/crops/maize.json"],
-				"cultivar": ["include-from-file", "monica-parameters/crops/maize/grain maize.json"]
+				"species": ["include-from-file", "monica-parameters/projects/macsur-eu-heat-stress-assessment/maize.json"],
+				"cultivar": ["include-from-file", "monica-parameters/projects/macsur-eu-heat-stress-assessment/grain-maize.json"]
 			},
 			"residueParams": ["include-from-file", "monica-parameters/crop-residues/maize.json"]
 		},
 		"WW": {
 			"cropParams": {
-				"species": ["include-from-file", "monica-parameters/crops/wheat.json"],
-				"cultivar": ["include-from-file", "monica-parameters/crops/wheat/winter wheat.json"]
+				"species": ["include-from-file", "monica-parameters/projects/macsur-eu-heat-stress-assessment/wheat.json"],
+				"cultivar": ["include-from-file", "monica-parameters/projects/macsur-eu-heat-stress-assessment/winter-wheat.json"]
 			},
 			"residueParams": ["include-from-file", "monica-parameters/crop-residues/wheat.json"]
 		}
@@ -31,7 +31,5 @@
 		}
 	],
 
-	"CropParameters": {
-		"DEFAULT": ["include-from-file", "monica-parameters/user-parameters/hermes-crop.json"]
-	}
+	"CropParameters": ["include-from-file", "monica-parameters/general/crop.json"]
 }
