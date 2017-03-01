@@ -35,6 +35,8 @@ print sys.path
 #from soil_conversion import *
 #import monica_python
 import zmq
+print "pyzmq version: ", zmq.pyzmq_version(), " zmq version: ", zmq.zmq_version()
+
 import monica_io
 #print "path to monica_io: ", monica_io.__file__
 
@@ -42,10 +44,26 @@ import monica_io
 #print "sys.path: ", sys.path
 #print "sys.version: ", sys.version
 
-#PATH_TO_CLIMATE_DATA = "A:/macsur-eu-heat-stress-transformed/"
-PATH_TO_CLIMATE_DATA_SERVER = "/archiv-daten/md/projects/macsur-eu-heat-stress-assessment/climate-data/transformed/"
-PATH_TO_CLIMATE_DATA = "P:/macsur-eu-heat-stress-assessment/climate-data/transformed" 
-INCLUDE_FILE_BASE_PATH = "C:/Users/berg.ZALF-AD.000/MONICA"
+USER = "berg2"
+LOCAL_RUN = False
+
+PATHS = {
+    "stella": {
+        "INCLUDE_FILE_BASE_PATH": "C:/Users/stella/Documents/GitHub",
+        "LOCAL_ARCHIVE_PATH_TO_PROJECT": "Z:/projects/macsur-eu-heat-stress-assessment/",
+        "ARCHIVE_PATH_TO_PROJECT": "/archiv-daten/md/projects/macsur-eu-heat-stress-assessment/"
+    },
+    "berg": {
+        "INCLUDE_FILE_BASE_PATH": "C:/Users/berg.ZALF-AD.000/Documents/GitHub",
+        "LOCAL_ARCHIVE_PATH_TO_PROJECT": "P:/macsur-eu-heat-stress-assessment/",
+        "ARCHIVE_PATH_TO_PROJECT": "/archiv-daten/md/projects/macsur-scaling-cc-nrw/"
+    },
+    "berg2": {
+        "INCLUDE_FILE_BASE_PATH": "C:/Users/berg.ZALF-AD/GitHub",
+        "LOCAL_ARCHIVE_PATH_TO_PROJECT": "P:/macsur-eu-heat-stress-assessment/",
+        "ARCHIVE_PATH_TO_PROJECT": "/archiv-daten/md/projects/macsur-eu-heat-stress-assessment/"
+    }
+}
 
 def main():
     "main"
@@ -64,7 +82,10 @@ def main():
             if k in config:
                 config[k] = int(v) 
 
-    socket.connect("tcp://cluster2:" + str(config["port"]))
+    if LOCAL_RUN:
+        socket.connect("tcp://localhost:" + str(config["port"]))
+    else:
+        socket.connect("tcp://cluster2:" + str(config["port"]))
 
     with open("sim.json") as _:
         sim = json.load(_)
@@ -78,7 +99,7 @@ def main():
     with open("sims.json") as _:
         sims = json.load(_)
 
-    sim["include-file-base-path"] = INCLUDE_FILE_BASE_PATH
+    sim["include-file-base-path"] = PATHS[USER]["INCLUDE_FILE_BASE_PATH"]
 
     period_gcm_co2s = [
         {"id": "C1", "period": "0", "gcm": "0_0", "co2_value": 360},
@@ -147,13 +168,13 @@ def main():
             return ppp
 
     pheno = {
-        "GM": read_pheno("Maize_pheno_v3.csv"),
-        "WW": read_pheno("WW_pheno_v3.csv")
+        "GM": read_pheno(PATHS[USER]["LOCAL_ARCHIVE_PATH_TO_PROJECT"] + "phenology/Maize_pheno_v3.csv"),
+        "WW": read_pheno(PATHS[USER]["LOCAL_ARCHIVE_PATH_TO_PROJECT"] + "phenology/WW_pheno_v3.csv")
     }
 
     soil = {}
     row_cols = []
-    with open("JRC_soil_macsur_v3.csv") as _:
+    with open(PATHS[USER]["LOCAL_ARCHIVE_PATH_TO_PROJECT"] + "soil/JRC_soil_macsur_v3.csv") as _:
         reader = csv.reader(_)
         reader.next()
         for row in reader:
@@ -228,8 +249,8 @@ def main():
             return rrr
 
     calib = {
-        "GM": read_calibrated_tsums("Calibrated_TSUM_Maize.csv", "GM"),
-        "WW": read_calibrated_tsums("Calibrated_TSUM_WW.csv", "WW")
+        "GM": read_calibrated_tsums(PATHS[USER]["LOCAL_ARCHIVE_PATH_TO_PROJECT"] + "calibration/Calibrated_TSUM_Maize.csv", "GM"),
+        "WW": read_calibrated_tsums(PATHS[USER]["LOCAL_ARCHIVE_PATH_TO_PROJECT"] + "calibration/Calibrated_TSUM_WW.csv", "WW")
     }
 
     def update_soil_crop_dates(row, col, crop_id):
@@ -331,7 +352,7 @@ def main():
     print "# of rowsCols = ", len(row_cols)
 
     read_climate_data_locally = False
-    i = 0
+    i = 1
     start_store = time.clock()
     start = config["start"] - 1
     end = config["end"] - 1
@@ -365,13 +386,13 @@ def main():
 
                 #read climate data on client and send them with the env
                 if read_climate_data_locally:
-                    path_to_climate_file = os.path.join(PATH_TO_CLIMATE_DATA, period, gcm, climate_filename)
+                    path_to_climate_file = os.path.join(PATHS[USER]["LOCAL_ARCHIVE_PATH_TO_PROJECT"] + "climate-data/transformed/", period, gcm, climate_filename)
                     with open(path_to_climate_file) as cf_:
                         climate_data = cf_.read()
                     monica_io.add_climate_data_to_env(env, sim, climate_data)
                 else:
                     #read climate data on the server and send just the path to the climate data csv file
-                    env["pathToClimateCSV"] = PATH_TO_CLIMATE_DATA_SERVER + period + "/" + gcm + "/" + climate_filename
+                    env["pathToClimateCSV"] = PATHS[USER]["ARCHIVE_PATH_TO_PROJECT"] + "climate-data/transformed/" + period + "/" + gcm + "/" + climate_filename
 
                 env["events"] = sims["output"][crop_id]
 
@@ -422,7 +443,7 @@ def main():
 
     stop_store = time.clock()
 
-    print "sending ", i, " envs took ", (stop_store - start_store), " seconds"
+    print "sending ", (i-1), " envs took ", (stop_store - start_store), " seconds"
     print "ran from ", start, "/", row_cols[start], " to ", end, "/", row_cols[end]
     return
 

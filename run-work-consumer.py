@@ -18,7 +18,7 @@
 import sys
 #sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\project-files\\Win32\\Release")
 #sys.path.insert(0, "C:\\Users\\berg.ZALF-AD\\GitHub\\monica\\src\\python")
-sys.path.insert(0, "C:\\Program Files (x86)\\MONICA")
+#sys.path.insert(0, "C:\\Program Files (x86)\\MONICA")
 print sys.path
 
 import gc
@@ -29,13 +29,12 @@ from datetime import datetime
 from collections import defaultdict
 
 import zmq
-#print zmq.pyzmq_version()
+print "pyzmq version: ", zmq.pyzmq_version(), " zmq version: ", zmq.zmq_version()
+
 import monica_io
 #print "path to monica_io: ", monica_io.__file__
 
-#log = open("errors.txt", 'w')
-
-#gc.enable()
+LOCAL_RUN = False
 
 def create_output(row, col, crop_id, co2_id, co2_value, period, gcm, trt_no, irrig, prod_case, result):
     "create crop output lines"
@@ -147,15 +146,18 @@ def write_data(row, col, data):
         data[(row, col)] = []
 
 
-def collector():
+def main():
     "collect data from workers"
 
     data = defaultdict(list)
 
-    i = 0
+    i = 1
     context = zmq.Context()
     socket = context.socket(zmq.PULL)
-    socket.connect("tcp://cluster2:7777")
+    if LOCAL_RUN:
+        socket.connect("tcp://localhost:7777")
+    else:
+        socket.connect("tcp://cluster2:7777")
     socket.RCVTIMEO = 1000
     leave = False
     write_normal_output_files = False
@@ -232,6 +234,4 @@ def collector():
             i = i + 1
 
 
-collector()
-
-#log.close()
+main()
