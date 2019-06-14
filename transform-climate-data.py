@@ -29,19 +29,24 @@ def main():
       reader.next()
       of = None
 
-      csvHeader = ["iso-date", "tmin", "tavg", "tmax", "precip", "globrad", "wind", "relhumid"]
+      csvHeader = ["iso-date", "tmin", "tavg", "tmax", "precip", "globrad", "wind", "relhumid", "vaporpress", "dewpoint_temp", "relhumid_tmin", "relhumid_tmax"]
+      csvUnits = ["-", "°C", "°C", "°C", "mm", "MJ m-2", "m s-1", "% 0-100", "kPa", "°C", "% 0-100", "% 0-100"]
       for row in reader:
         period, gcm = period_gcmRcp = (row[0], row[1])
         
         line = [
           datetime.datetime.strptime(row[2], "%Y%m%d").date().isoformat()
           , float(row[4])
-          , (float(row[3]) + float(row[4])) / 2
+          , round((float(row[3]) + float(row[4])) / 2, 1)
           , float(row[3])
           , float(row[7])
           , float(row[8])
-          , float(row[6]) / 24 / 3.6
-          , (float(row[9]) + float(row[10])) / 2
+          , round(float(row[6]) / 24 / 3.6, 1)
+          , round((float(row[9]) + float(row[10])) / 2, 1)
+          , float(row[5])
+          , float(row[11])
+          , float(row[9])
+          , float(row[10])
           ]
 
         if prevPeriodGcm != period_gcmRcp:
@@ -55,6 +60,7 @@ def main():
           of = open(fullPathToOutputDir + filename, 'wb')
           writer = csv.writer(of, delimiter = ",")
           writer.writerow(csvHeader)
+          writer.writerow(csvUnits)
           prevPeriodGcm = period_gcmRcp
         
         writer.writerow(line)
@@ -63,8 +69,8 @@ def main():
         of.close()		
 
 
-  pathToClimateCSVs = "A:/macsur-eu-heat-stress/"
-  pathToOutput = "A:/macsur-eu-heat-stress-3/"
+  pathToClimateCSVs = "/beegfs/common/data/climate/macsur_european_climate_scenarios_v2/original/"
+  pathToOutput = "/beegfs/common/data/climate/macsur_european_climate_scenarios_v2/transformed/"
 
   files = os.listdir(pathToClimateCSVs)
   print "read directory ..."
@@ -75,4 +81,5 @@ def main():
       transformClimate(fullPath, pathToOutput)
       print "transformed ", f 
 
-main()
+if __name__ == '__main__':
+    main()
